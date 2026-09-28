@@ -233,11 +233,47 @@ export class ScoreboardScene extends Phaser.Scene {
       );
     });
 
+    const btnW = Math.min(184, width - 24);
+    const menuY = height * 0.86;
+    const bg = this.add.graphics();
+    const drawPlaque = (fill: number, borderColor: number = COLOURS.cyan, borderWidth = 0): void => {
+      bg.clear();
+      bg.fillStyle(fill, 0.95);
+      bg.fillRect(centerX - btnW / 2, menuY - 10, btnW, 22);
+      if (borderWidth > 0) {
+        bg.lineStyle(borderWidth, borderColor, 0.9);
+        bg.strokeRect(centerX - btnW / 2 + 0.5, menuY - 10 + 0.5, btnW - 1, 21);
+      }
+    };
+    drawPlaque(COLOURS.road);
+    layer.add(bg);
+
     const menu = this.add
-      .text(centerX, height * 0.86, 'MENU', { fontFamily: 'Bungee', fontSize: '13px', color: COLOUR_HEX.cyan })
+      .text(centerX, menuY, 'MENU', { fontFamily: 'Bungee', fontSize: '13px', color: COLOUR_HEX.text })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
-    menu.on('pointerup', () => this.scene.start(SCENES.Menu));
+
+    menu.on('pointerover', () => {
+      menu.setColor(COLOUR_HEX.cyan);
+      menu.setScale(1.05);
+      drawPlaque(COLOURS.road, COLOURS.cyan, 1);
+    });
+    menu.on('pointerout', () => {
+      menu.setColor(COLOUR_HEX.text);
+      menu.setScale(1.0);
+      drawPlaque(COLOURS.road);
+    });
+    menu.on('pointerdown', () => {
+      menu.setColor(COLOUR_HEX.hazard);
+      menu.setScale(0.98);
+      drawPlaque(COLOURS.hazard, COLOURS.hazard, 1);
+    });
+    menu.on('pointerup', () => {
+      menu.setColor(COLOUR_HEX.cyan);
+      menu.setScale(1.05);
+      drawPlaque(COLOURS.road, COLOURS.cyan, 1);
+      this.scene.start(SCENES.Menu);
+    });
     layer.add(menu);
 
     if (this.pendingScore === undefined) this.statusText.setText('');

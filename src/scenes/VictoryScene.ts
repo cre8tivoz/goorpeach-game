@@ -130,24 +130,42 @@ export class VictoryScene extends Phaser.Scene {
     const { width, centerX } = getLayout();
     const btnW = Math.min(184, width - 24);
     const bg = this.add.graphics();
-    const draw = (fill: number, alpha: number): void => {
+    const drawPlaque = (fill: number, borderColor: number = COLOURS.cyan, borderWidth = 0): void => {
       bg.clear();
-      bg.fillStyle(fill, alpha);
-      bg.fillRect(centerX - btnW / 2, y - 9, btnW, 20);
+      bg.fillStyle(fill, 0.95);
+      bg.fillRect(centerX - btnW / 2, y - 10, btnW, 22);
+      if (borderWidth > 0) {
+        bg.lineStyle(borderWidth, borderColor, 0.9);
+        bg.strokeRect(centerX - btnW / 2 + 0.5, y - 10 + 0.5, btnW - 1, 21);
+      }
     };
-    draw(COLOURS.road, 1);
+    drawPlaque(COLOURS.road);
+
     const txt = this.add
       .text(centerX, y, label, { fontFamily: 'Bungee', fontSize: '12px', color: COLOUR_HEX.text })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
+
     txt.on('pointerover', () => {
       txt.setColor(COLOUR_HEX.cyan);
-      draw(COLOURS.cyan, 0.22);
+      txt.setScale(1.05);
+      drawPlaque(COLOURS.road, COLOURS.cyan, 1);
     });
     txt.on('pointerout', () => {
       txt.setColor(COLOUR_HEX.text);
-      draw(COLOURS.road, 1);
+      txt.setScale(1.0);
+      drawPlaque(COLOURS.road);
     });
-    txt.on('pointerup', onActivate);
+    txt.on('pointerdown', () => {
+      txt.setColor(COLOUR_HEX.hazard);
+      txt.setScale(0.98);
+      drawPlaque(COLOURS.hazard, COLOURS.hazard, 1);
+    });
+    txt.on('pointerup', () => {
+      txt.setColor(COLOUR_HEX.cyan);
+      txt.setScale(1.05);
+      drawPlaque(COLOURS.road, COLOURS.cyan, 1);
+      onActivate();
+    });
   }
 }
