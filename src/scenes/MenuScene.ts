@@ -189,11 +189,15 @@ export class MenuScene extends Phaser.Scene {
     const { width, centerX } = getLayout();
     const btnW = Math.min(184, width - 24);
 
-    // Background "plaque" — raised slightly lighter than the card it sits on
-    const drawPlaque = (fill: number, alpha: number): void => {
+    // Background "plaque" — raised slightly lighter than the card it sits on with border trim
+    const drawPlaque = (fill: number, alpha: number, borderColor: number = COLOURS.cyan, borderWidth = 0): void => {
       bg.clear();
       bg.fillStyle(fill, alpha);
-      bg.fillRect(centerX - btnW / 2, y - 9, btnW, 20);
+      bg.fillRect(centerX - btnW / 2, y - 10, btnW, 22);
+      if (borderWidth > 0) {
+        bg.lineStyle(borderWidth, borderColor, 0.9);
+        bg.strokeRect(centerX - btnW / 2 + 0.5, y - 10 + 0.5, btnW - 1, 21);
+      }
     };
     const bg = this.add.graphics();
     drawPlaque(COLOURS.road, 1);
@@ -208,23 +212,29 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 
-    // Hover / active feedback using cyan accent (UI highlight colour)
+    // Hover / active feedback with scale, border glow, and cyan/hazard accents
     txt.on('pointerover', () => {
       txt.setColor(COLOUR_HEX.cyan);
-      drawPlaque(COLOURS.cyan, 0.22);
+      txt.setScale(1.05);
+      drawPlaque(COLOURS.road, 1, COLOURS.cyan, 1);
     });
 
     txt.on('pointerout', () => {
       txt.setColor(COLOUR_HEX.text);
+      txt.setScale(1.0);
       drawPlaque(COLOURS.road, 1);
     });
 
     txt.on('pointerdown', () => {
       txt.setColor(COLOUR_HEX.hazard);
+      txt.setScale(0.98);
+      drawPlaque(COLOURS.hazard, 0.25, COLOURS.hazard, 1);
     });
 
     txt.on('pointerup', () => {
       txt.setColor(COLOUR_HEX.cyan);
+      txt.setScale(1.05);
+      drawPlaque(COLOURS.road, 1, COLOURS.cyan, 1);
       onActivate();
     });
 

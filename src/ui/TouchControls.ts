@@ -136,27 +136,43 @@ export class TouchControls {
     const g = scene.add.graphics();
     const sz = touch.steerZone;
     const half = sz.w / 2;
-    // Two arrow-key halves with a faint seam, so the keyboard-like pad reads clearly.
-    g.fillStyle(COLOURS.cyan, touch.hintAlpha);
-    g.fillRect(sz.x, sz.y, half - 1, sz.h);
-    g.fillStyle(COLOURS.cyan, touch.hintAlpha * 1.6);
-    g.fillRect(sz.x + half + 1, sz.y, half - 1, sz.h);
-    g.fillStyle(COLOURS.caution, touch.hintAlpha);
-    g.fillRect(touch.brakeZone.x, touch.brakeZone.y, touch.brakeZone.w, touch.brakeZone.h);
-    g.fillStyle(COLOURS.hazard, touch.hintAlpha);
-    g.fillRect(touch.fireZone.x, touch.fireZone.y, touch.fireZone.w, touch.fireZone.h);
+    const alpha = touch.hintAlpha;
 
-    const tag = (x: number, y: number, s: string, size = 6): void => {
+    // Steer zones with rounded borders and directional chevrons
+    g.fillStyle(COLOURS.cyan, alpha);
+    g.fillRect(sz.x + 2, sz.y + 2, half - 4, sz.h - 4);
+    g.lineStyle(1, COLOURS.cyan, alpha * 2.5);
+    g.strokeRect(sz.x + 2.5, sz.y + 2.5, half - 5, sz.h - 5);
+
+    g.fillStyle(COLOURS.cyan, alpha * 1.5);
+    g.fillRect(sz.x + half + 2, sz.y + 2, half - 4, sz.h - 4);
+    g.lineStyle(1, COLOURS.cyan, alpha * 2.5);
+    g.strokeRect(sz.x + half + 2.5, sz.y + 2.5, half - 5, sz.h - 5);
+
+    // Brake zone with caution border
+    const bz = touch.brakeZone;
+    g.fillStyle(COLOURS.caution, alpha);
+    g.fillRect(bz.x + 2, bz.y + 2, bz.w - 4, bz.h - 4);
+    g.lineStyle(1, COLOURS.caution, alpha * 2.5);
+    g.strokeRect(bz.x + 2.5, bz.y + 2.5, bz.w - 5, bz.h - 5);
+
+    // Fire zone with hazard border
+    const fz = touch.fireZone;
+    g.fillStyle(COLOURS.hazard, alpha);
+    g.fillRect(fz.x + 2, fz.y + 2, fz.w - 4, fz.h - 4);
+    g.lineStyle(1, COLOURS.hazard, alpha * 2.5);
+    g.strokeRect(fz.x + 2.5, fz.y + 2.5, fz.w - 5, fz.h - 5);
+
+    const tag = (x: number, y: number, s: string, size = 6, color: string = COLOUR_HEX.text): void => {
       scene.add
-        .text(x, y, s, { fontFamily: 'JetBrains Mono', fontSize: `${size}px`, color: COLOUR_HEX.text })
+        .text(x, y, s, { fontFamily: 'JetBrains Mono', fontSize: `${size}px`, color })
         .setOrigin(0.5)
-        .setAlpha(0.6);
+        .setAlpha(0.75);
     };
     const midY = sz.y + sz.h / 2;
-    tag(sz.x + half / 2, midY, '<', 14);
-    tag(sz.x + half + half / 2, midY, '>', 14);
-    tag(sz.x + sz.w / 2, sz.y + sz.h - 10, 'STEER');
-    tag(touch.brakeZone.x + touch.brakeZone.w / 2, touch.brakeZone.y + 12, 'BRAKE');
-    tag(touch.fireZone.x + touch.fireZone.w / 2, touch.fireZone.y + 12, 'TAP FIRE');
+    tag(sz.x + half / 2, midY, '◄ STEER', 9, COLOUR_HEX.cyan);
+    tag(sz.x + half + half / 2, midY, 'STEER ►', 9, COLOUR_HEX.cyan);
+    tag(bz.x + bz.w / 2, bz.y + bz.h / 2, 'BRAKE ⬇', 9, COLOUR_HEX.caution);
+    tag(fz.x + fz.w / 2, fz.y + fz.h / 2, '⚡ FIRE', 9, COLOUR_HEX.hazard);
   }
 }
