@@ -71,6 +71,8 @@ export class BossScene extends Phaser.Scene {
   private pauseKey?: Phaser.Input.Keyboard.Key;
 
   private readonly feederBrands: CourierBrand[] = ['GoorPeach', 'ChewSnog', 'GorgeRush'];
+  private readonly tempRectPlayer = new Phaser.Geom.Rectangle();
+  private readonly tempRectTarget = new Phaser.Geom.Rectangle();
 
   constructor() {
     super(SCENES.Boss);
@@ -319,7 +321,7 @@ export class BossScene extends Phaser.Scene {
       }
 
       // Player ram — stop the delivery (no ammo cost)
-      if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(), c.getBounds())) {
+      if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(this.tempRectPlayer), c.getBounds())) {
         Particles.burst(this, c.sprite.x, c.sprite.y, 'courierBurst');
         ScreenShake.courierHit(this);
         this.score.addCourier(c.brand);
@@ -357,7 +359,7 @@ export class BossScene extends Phaser.Scene {
     // Pen hits on the nerd drain the meter
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
-      if (pen && pen.active && Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), this.nerd.getBounds())) {
+      if (pen && pen.active && Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), this.nerd.getBounds(this.tempRectTarget))) {
         pen.destroy();
         this.pens.splice(i, 1);
         this.feed = Math.max(0, this.feed - BOSS.feed.penDrain);
@@ -408,7 +410,7 @@ export class BossScene extends Phaser.Scene {
     // Pen hits disable it
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
-      if (pen && pen.active && Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), tiguan.getBounds())) {
+      if (pen && pen.active && Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), tiguan.getBounds(this.tempRectTarget))) {
         pen.destroy();
         this.pens.splice(i, 1);
         this.tiguanHp -= 1;

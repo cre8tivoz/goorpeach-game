@@ -121,15 +121,19 @@ export class PlayerCar {
     sprite.y = Phaser.Math.Clamp(sprite.y, player.cruiseY - 8, player.brakeY);
   }
 
+  // Reusable rectangle buffers for collision bounds to eliminate per-frame GC allocations
+  private readonly hitBoundsRect = new Phaser.Geom.Rectangle();
+  private readonly tempSpriteBounds = new Phaser.Geom.Rectangle();
+
   /**
-   * Tight, player-favouring damage hitbox. The sprite has transparent padding,
-   * so we inset the display bounds to the visible car (config-driven, rule 9).
+   * Tight, player-favouring damage hitbox. Reuses output rectangle to eliminate per-frame GC allocations.
    */
-  getHitBounds(): Phaser.Geom.Rectangle {
-    const b = this.sprite.getBounds();
+  getHitBounds(out: Phaser.Geom.Rectangle = this.hitBoundsRect): Phaser.Geom.Rectangle {
+    const b = this.sprite.getBounds(this.tempSpriteBounds);
     const ix = b.width * PLAYER.hitInsetXFrac;
     const iy = b.height * PLAYER.hitInsetYFrac;
-    return new Phaser.Geom.Rectangle(b.x + ix, b.y + iy, b.width - ix * 2, b.height - iy * 2);
+    out.setTo(b.x + ix, b.y + iy, b.width - ix * 2, b.height - iy * 2);
+    return out;
   }
 
   getSpeedRatio(): number {
