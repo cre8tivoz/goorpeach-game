@@ -64,24 +64,32 @@ export class Courier {
     this.foodBag.setPosition(this.sprite.x, this.sprite.y + 4);
   }
 
-  getBounds(): Phaser.Geom.Rectangle {
-    return this.sprite.getBounds();
+  // Reusable rectangle buffers for collision bounds to eliminate per-frame GC allocations
+  private readonly boundsRect = new Phaser.Geom.Rectangle();
+  private readonly hitBoundsRect = new Phaser.Geom.Rectangle();
+  private readonly bodyBoundsRect = new Phaser.Geom.Rectangle();
+
+  getBounds(out: Phaser.Geom.Rectangle = this.boundsRect): Phaser.Geom.Rectangle {
+    return this.sprite.getBounds(out);
   }
 
-  getHitBounds(): Phaser.Geom.Rectangle {
-    const b = this.sprite.getBounds();
+  getHitBounds(out: Phaser.Geom.Rectangle = this.hitBoundsRect): Phaser.Geom.Rectangle {
+    const b = this.sprite.getBounds(this.boundsRect);
     const g = COURIER.hitGenerosity;
-    return new Phaser.Geom.Rectangle(b.x - g, b.y - g, b.width + g * 2, b.height + g * 2);
+    out.setTo(b.x - g, b.y - g, b.width + g * 2, b.height + g * 2);
+    return out;
   }
 
   /**
    * Tight rider hitbox for player-damage collisions — the compact body size from
    * config, centred on the sprite, so couriers only hurt you when they visibly
    * touch (not via the sprite's transparent padding). Player-favouring (rule 9).
+   * Reuses output rectangle to eliminate per-frame GC allocations.
    */
-  getBodyBounds(): Phaser.Geom.Rectangle {
+  getBodyBounds(out: Phaser.Geom.Rectangle = this.bodyBoundsRect): Phaser.Geom.Rectangle {
     const { w, h } = this.bodySize;
-    return new Phaser.Geom.Rectangle(this.sprite.x - w / 2, this.sprite.y - h / 2, w, h);
+    out.setTo(this.sprite.x - w / 2, this.sprite.y - h / 2, w, h);
+    return out;
   }
 
   hit(): boolean {

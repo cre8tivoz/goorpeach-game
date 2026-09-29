@@ -75,6 +75,7 @@ export class DriveScene extends Phaser.Scene {
   private endingRun = false;
   private runScoreSeed = 0; // score carried in from earlier levels this run
   private levelStartScore = 0; // snapshot for "Restart Level"
+  private readonly tempRect = new Phaser.Geom.Rectangle();
 
   constructor() {
     super(SCENES.Drive);
@@ -404,7 +405,7 @@ export class DriveScene extends Phaser.Scene {
         this.powerups.splice(i, 1);
         continue;
       }
-      if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.sprite.getBounds(), p.getBounds())) {
+      if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.sprite.getBounds(this.tempRect), p.getBounds())) {
         this.applyPowerUp(p.kind);
         p.destroy();
         this.powerups.splice(i, 1);

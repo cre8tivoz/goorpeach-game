@@ -59,9 +59,13 @@ export class PowerUp {
     return this.y > road.bottomY + POWERUP.visualRadius;
   }
 
-  getBounds(): Phaser.Geom.Rectangle {
+  // Reusable rectangle buffer to eliminate per-frame GC allocations
+  private readonly boundsRect = new Phaser.Geom.Rectangle();
+
+  getBounds(out: Phaser.Geom.Rectangle = this.boundsRect): Phaser.Geom.Rectangle {
     const r = POWERUP.visualRadius;
-    return new Phaser.Geom.Rectangle(this.x - r, this.y - r, r * 2, r * 2);
+    out.setTo(this.x - r, this.y - r, r * 2, r * 2);
+    return out;
   }
 
   destroy(): void {

@@ -1,0 +1,3 @@
+## 2025-01-15 - Reusable Geometry Rectangles for Collision Bounds
+**Learning:** Phaser 3 `GameObject.getBounds()` and custom bounding box helpers allocate a new `Phaser.Geom.Rectangle` on every call unless an output rectangle is provided. Calling `getBounds()` inside 60FPS update loops across multiple active entities creates thousands of short-lived objects per second, leading to GC pauses and frame stutters on mobile browsers.
+**Action:** Always accept an optional `out: Phaser.Geom.Rectangle` parameter defaulting to a pre-allocated instance property, and pass pre-allocated output rectangles to `getBounds(out)` calls in update loops.

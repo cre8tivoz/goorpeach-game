@@ -33,19 +33,24 @@ export class Tram {
     this.body.x += this.velocityX * (delta / 1000);
   }
 
-  getBounds(): Phaser.Geom.Rectangle {
-    return this.body.getBounds();
+  // Reusable rectangle buffers for collision bounds to eliminate per-frame GC allocations
+  private readonly boundsRect = new Phaser.Geom.Rectangle();
+  private readonly hitBoundsRect = new Phaser.Geom.Rectangle();
+
+  getBounds(out: Phaser.Geom.Rectangle = this.boundsRect): Phaser.Geom.Rectangle {
+    return this.body.getBounds(out);
   }
 
-  /** Hazard bounds — wide on X, tight on Y so a full brake clears the crossing. */
-  getHitBounds(): Phaser.Geom.Rectangle {
-    const b = this.body.getBounds();
-    return new Phaser.Geom.Rectangle(
+  /** Hazard bounds — wide on X, tight on Y so a full brake clears the crossing. Reuses output rectangle. */
+  getHitBounds(out: Phaser.Geom.Rectangle = this.hitBoundsRect): Phaser.Geom.Rectangle {
+    const b = this.body.getBounds(this.boundsRect);
+    out.setTo(
       b.x - TRAM.hitPaddingX,
       b.y - TRAM.hitPaddingY,
       b.width + TRAM.hitPaddingX * 2,
       b.height + TRAM.hitPaddingY * 2,
     );
+    return out;
   }
 
   get offscreen(): boolean {

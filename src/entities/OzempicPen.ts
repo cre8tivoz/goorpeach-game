@@ -27,8 +27,11 @@ export class OzempicPen {
     this.body.setActive(false).setVisible(false);
   }
 
-  getBounds(): Phaser.Geom.Rectangle {
-    return this.body.getBounds();
+  // Reusable rectangle buffer to eliminate per-frame GC allocations
+  private readonly boundsRect = new Phaser.Geom.Rectangle();
+
+  getBounds(out: Phaser.Geom.Rectangle = this.boundsRect): Phaser.Geom.Rectangle {
+    return this.body.getBounds(out);
   }
 
   get active(): boolean {
