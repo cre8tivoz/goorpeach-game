@@ -54,11 +54,17 @@ export class CreditsScene extends Phaser.Scene {
     // Place BACK below the body, clamped above the bottom edge — never overlaps copy.
     const backY = Math.min(bodyText.y + bodyText.height + height * 0.06, height * 0.95);
     const back = this.add
-      .text(centerX, backY, 'BACK', { fontFamily: FONTS.title, fontSize: '13px', color: COLOUR_HEX.cyan })
+      .text(centerX, backY, '[B] BACK', { fontFamily: FONTS.title, fontSize: '13px', color: COLOUR_HEX.cyan })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     back.on('pointerover', () => back.setColor(COLOUR_HEX.hazard));
     back.on('pointerout', () => back.setColor(COLOUR_HEX.cyan));
     back.on('pointerup', () => this.scene.start(SCENES.Menu));
+
+    this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape' || ev.key === 'b' || ev.key === 'B' || ev.key === 'm' || ev.key === 'M') {
+        this.scene.start(SCENES.Menu);
+      }
+    });
   }
 }

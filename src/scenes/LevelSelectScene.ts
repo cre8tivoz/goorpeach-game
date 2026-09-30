@@ -12,6 +12,8 @@ import { CrtOverlay } from '../ui/CrtOverlay';
  * an unlocked driving level starts it; the final entry is the Kew boss arena.
  */
 export class LevelSelectScene extends Phaser.Scene {
+  private statusText!: Phaser.GameObjects.Text;
+
   constructor() {
     super(SCENES.LevelSelect);
   }
@@ -21,7 +23,15 @@ export class LevelSelectScene extends Phaser.Scene {
     new CrtOverlay(this);
     this.add.rectangle(centerX, centerY, width, height, COLOURS.road).setOrigin(0.5);
     this.add
-      .text(centerX, height * 0.1, 'SELECT SUBURB', { fontFamily: 'Bungee', fontSize: '20px', color: COLOUR_HEX.text })
+      .text(centerX, height * 0.08, 'SELECT SUBURB', { fontFamily: 'Bungee', fontSize: '20px', color: COLOUR_HEX.text })
+      .setOrigin(0.5);
+
+    this.statusText = this.add
+      .text(centerX, height * 0.83, 'Select an unlocked suburb to drive', {
+        fontFamily: 'JetBrains Mono',
+        fontSize: '9px',
+        color: COLOUR_HEX.cyan,
+      })
       .setOrigin(0.5);
 
     const highest = Persistence.getHighestUnlocked();
@@ -32,23 +42,29 @@ export class LevelSelectScene extends Phaser.Scene {
       { id: 5, name: 'Kew — The Nerd', boss: true },
     ];
 
-    let y = height * 0.26;
+    let y = height * 0.22;
     const rowGap = height * 0.11;
     for (const entry of entries) {
       const unlocked = entry.id <= highest;
-      this.createRow(entry.name, entry.boss, unlocked, y, () => {
+      this.createRow(entry.id, entry.name, entry.boss, unlocked, y, () => {
         void this.startEntry(entry.boss, entry.id);
       });
       y += rowGap;
     }
 
     const back = this.add
-      .text(centerX, height * 0.9, 'BACK', { fontFamily: 'Bungee', fontSize: '13px', color: COLOUR_HEX.cyan })
+      .text(centerX, height * 0.91, '[B] BACK', { fontFamily: 'Bungee', fontSize: '13px', color: COLOUR_HEX.cyan })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     back.on('pointerover', () => back.setColor(COLOUR_HEX.hazard));
     back.on('pointerout', () => back.setColor(COLOUR_HEX.cyan));
     back.on('pointerup', () => this.scene.start(SCENES.Menu));
+
+    this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape' || ev.key === 'b' || ev.key === 'B' || ev.key === 'm' || ev.key === 'M') {
+        this.scene.start(SCENES.Menu);
+      }
+    });
   }
 
   /** Level pick is a user gesture — unlock audio here if START was skipped. */
@@ -66,7 +82,7 @@ export class LevelSelectScene extends Phaser.Scene {
     else this.scene.start(SCENES.Drive, { levelId });
   }
 
-  private createRow(name: string, boss: boolean, unlocked: boolean, y: number, onSelect: () => void): void {
+  private createRow(id: number, name: string, boss: boolean, unlocked: boolean, y: number, onSelect: () => void): void {
     const { width, centerX } = getLayout();
     const rowW = Math.min(300, width - 20);
     const bg = this.add.graphics();
@@ -74,7 +90,7 @@ export class LevelSelectScene extends Phaser.Scene {
     bg.fillRect(centerX - rowW / 2, y - 11, rowW, 24);
     if (boss && unlocked) bg.lineStyle(2, COLOURS.magenta, 1).strokeRect(centerX - rowW / 2, y - 11, rowW, 24);
 
-    const label = unlocked ? name : `${name}  — LOCKED`;
+    const label = unlocked ? name : `🔒 ${name}`;
     const txt = this.add
       .text(centerX - rowW / 2 + 12, y, label, {
         fontFamily: boss ? 'Bungee' : 'JetBrains Mono',
@@ -83,12 +99,18 @@ export class LevelSelectScene extends Phaser.Scene {
       })
       .setOrigin(0, 0.5);
 
+    txt.setInteractive({ useHandCursor: true });
+
     if (!unlocked) {
-      txt.setColor(COLOUR_HEX.footpath).setAlpha(0.45);
+      txt.setColor(COLOUR_HEX.footpath).setAlpha(0.6);
+      txt.on('pointerdown', () => {
+        const prevName = id > 1 ? LEVELS[id - 2]?.name ?? `Suburb ${id - 1}` : 'previous suburb';
+        this.statusText.setText(`Complete ${prevName} to unlock!`);
+        this.statusText.setColor(COLOUR_HEX.hazard);
+      });
       return;
     }
 
-    txt.setInteractive({ useHandCursor: true });
     txt.on('pointerover', () => txt.setColor(COLOUR_HEX.cyan));
     txt.on('pointerout', () => txt.setColor(boss ? COLOUR_HEX.magenta : COLOUR_HEX.text));
     txt.on('pointerup', onSelect);

@@ -70,12 +70,12 @@ export class MenuScene extends Phaser.Scene {
     // Buttons — large tap targets, chunky 90s style.
     // Lay them out inside a solid contained panel so the skyline never bleeds
     // through and text stays readable (CLAUDE.md: fewer features, more polish).
-    const buttons: Array<[string, () => void]> = [
-      ['START', () => void this.handleStart()],
-      ['LEVEL SELECT', () => this.scene.start(SCENES.LevelSelect)],
-      ['HIGH SCORES', () => this.scene.start(SCENES.Scoreboard)],
-      ['SETTINGS', () => this.scene.start(SCENES.Settings)],
-      ['CREDITS', () => this.scene.start(SCENES.Credits)],
+    const buttons: Array<[string, string, () => void]> = [
+      ['[1] START', '1', () => void this.handleStart()],
+      ['[2] LEVEL SELECT', '2', () => this.scene.start(SCENES.LevelSelect)],
+      ['[3] HIGH SCORES', '3', () => this.scene.start(SCENES.Scoreboard)],
+      ['[4] SETTINGS', '4', () => this.scene.start(SCENES.Settings)],
+      ['[5] CREDITS', '5', () => this.scene.start(SCENES.Credits)],
     ];
 
     const firstY = height * 0.5;
@@ -83,8 +83,28 @@ export class MenuScene extends Phaser.Scene {
     const lastY = firstY + btnGap * (buttons.length - 1);
     this.drawButtonPanel(firstY, lastY);
 
-    buttons.forEach(([label, onActivate], i) => {
+    buttons.forEach(([label, _key, onActivate], i) => {
       this.createButton(label, firstY + btnGap * i, onActivate);
+    });
+
+    // Keyboard shortcuts for menu navigation
+    this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
+      if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 's' || ev.key === 'S' || ev.key === '1') {
+        void this.handleStart();
+      } else if (ev.key === '2') {
+        this.scene.start(SCENES.LevelSelect);
+      } else if (ev.key === '3') {
+        this.scene.start(SCENES.Scoreboard);
+      } else if (ev.key === '4') {
+        this.scene.start(SCENES.Settings);
+      } else if (ev.key === '5') {
+        this.scene.start(SCENES.Credits);
+      } else if (ev.key === 'm' || ev.key === 'M') {
+        if (this.audio) {
+          const nowMuted = this.audio.toggleMute();
+          muteBtn.setText(nowMuted ? 'M' : '♫');
+        }
+      }
     });
 
     // Small mute toggle (top-right, touch friendly)
