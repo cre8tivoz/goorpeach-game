@@ -75,15 +75,31 @@ export class GameOverScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.createButton('RESTART LEVEL', height * 0.63, () => {
+    const doRestart = (): void => {
       const target = this.params.restartScene ?? SCENES.Drive;
       this.scene.start(target, { levelId: this.params.levelId, score: this.params.restartScore });
-    });
-    this.createButton('SUBMIT SCORE', height * 0.73, () => {
+    };
+
+    const doSubmit = (): void => {
       this.scene.start(SCENES.Scoreboard, { score: this.params.score, levelReached: this.params.levelId });
-    });
-    this.createButton('QUIT TO MENU', height * 0.83, () => {
+    };
+
+    const doQuit = (): void => {
       this.scene.start(SCENES.Menu);
+    };
+
+    this.createButton('[R] RESTART LEVEL', height * 0.63, doRestart);
+    this.createButton('[S] SUBMIT SCORE', height * 0.73, doSubmit);
+    this.createButton('[Q] QUIT TO MENU', height * 0.83, doQuit);
+
+    this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
+      if (ev.key === 'r' || ev.key === 'R') {
+        doRestart();
+      } else if (ev.key === 's' || ev.key === 'S') {
+        doSubmit();
+      } else if (ev.key === 'q' || ev.key === 'Q' || ev.key === 'Escape') {
+        doQuit();
+      }
     });
 
     // Defeat sting

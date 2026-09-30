@@ -39,12 +39,18 @@ export class SettingsScene extends Phaser.Scene {
     y = this.addModeRow(y, rowGap);
 
     const back = this.add
-      .text(centerX, height * 0.9, 'BACK', { fontFamily: FONTS.title, fontSize: '13px', color: COLOUR_HEX.cyan })
+      .text(centerX, height * 0.9, '[B] BACK', { fontFamily: FONTS.title, fontSize: '13px', color: COLOUR_HEX.cyan })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
     back.on('pointerover', () => back.setColor(COLOUR_HEX.hazard));
     back.on('pointerout', () => back.setColor(COLOUR_HEX.cyan));
     back.on('pointerup', () => this.goBack());
+
+    this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape' || ev.key === 'b' || ev.key === 'B' || ev.key === 'm' || ev.key === 'M') {
+        this.goBack();
+      }
+    });
 
     this.crt = new CrtOverlay(this);
   }

@@ -56,11 +56,11 @@ export class PauseOverlay {
 
     let y = cardTop + 62;
     const gap = height * 0.09;
-    this.addButton('RESUME', y, () => callbacks.onResume());
+    this.addButton('[P] RESUME', y, () => callbacks.onResume());
     y += gap;
-    this.addButton('RESTART', y, () => callbacks.onRestart());
+    this.addButton('[R] RESTART', y, () => callbacks.onRestart());
     y += gap;
-    this.addButton('QUIT', y, () => callbacks.onQuit());
+    this.addButton('[Q] QUIT', y, () => callbacks.onQuit());
     y += gap;
     this.muteLabel = this.addButton(this.muteText(), y, () => {
       callbacks.onMuteToggle();
@@ -69,7 +69,7 @@ export class PauseOverlay {
   }
 
   private muteText(): string {
-    return this.callbacks.getMuted() ? 'UNMUTE' : 'MUTE';
+    return this.callbacks.getMuted() ? '[M] UNMUTE' : '[M] MUTE';
   }
 
   private addButton(label: string, y: number, onClick: () => void): Phaser.GameObjects.Text {

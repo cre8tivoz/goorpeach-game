@@ -144,6 +144,12 @@ export class ScoreboardScene extends Phaser.Scene {
   }
 
   private onKey(ev: KeyboardEvent): void {
+    if (this.phase === 'board') {
+      if (ev.key === 'Escape' || ev.key === 'm' || ev.key === 'M' || ev.key === 'b' || ev.key === 'B') {
+        this.scene.start(SCENES.Menu);
+      }
+      return;
+    }
     if (this.phase !== 'entry') return;
     switch (ev.key) {
       case 'ArrowUp':
@@ -249,7 +255,7 @@ export class ScoreboardScene extends Phaser.Scene {
     layer.add(bg);
 
     const menu = this.add
-      .text(centerX, menuY, 'MENU', { fontFamily: 'Bungee', fontSize: '13px', color: COLOUR_HEX.text })
+      .text(centerX, menuY, '[M] MENU', { fontFamily: 'Bungee', fontSize: '13px', color: COLOUR_HEX.text })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 

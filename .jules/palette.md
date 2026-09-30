@@ -1,0 +1,3 @@
+## 2026-06-08 - Keyboard Shortcuts and Live Accessibility in Phaser 3 UI Scenes
+**Learning:** In canvas-based games (like Phaser 3), HTML accessibility features (such as `aria-live` on hidden status elements) provide essential live feedback for screen readers. Furthermore, adding explicit keyboard shortcut badges (e.g., `[1] START`, `[B] BACK`, `[R] RESTART`, `[M] MENU`) alongside keyboard event listeners transforms canvas overlays into fully keyboard-accessible interfaces without requiring complex focus management DOM trees.
+**Action:** When working on Phaser or canvas-based scenes, always bind standard keyboard keys (Number keys, Enter/Space, Esc/B/M, R/Q) to menu options and display bracketed shortcut hints directly on button labels for instant clarity.

@@ -49,10 +49,25 @@ export class VictoryScene extends Phaser.Scene {
     const btn1Y = height * 0.69;
     const btn2Y = height * 0.8;
     this.drawButtonPanel(btn1Y, btn2Y);
-    this.createButton('ENTER INITIALS', btn1Y, () => {
+
+    const goToScoreboard = (): void => {
       this.scene.start(SCENES.Scoreboard, { score: this.finalScore, levelReached: 5 });
+    };
+
+    const goToMenu = (): void => {
+      this.scene.start(SCENES.Menu);
+    };
+
+    this.createButton('[ENTER] INITIALS', btn1Y, goToScoreboard);
+    this.createButton('[M] MENU', btn2Y, goToMenu);
+
+    this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
+      if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'i' || ev.key === 'I') {
+        goToScoreboard();
+      } else if (ev.key === 'Escape' || ev.key === 'm' || ev.key === 'M') {
+        goToMenu();
+      }
     });
-    this.createButton('MENU', btn2Y, () => this.scene.start(SCENES.Menu));
 
     const audio = this.registry.get('audio') as Audio | undefined;
     if (audio && !audio.isMuted) {
