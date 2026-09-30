@@ -166,6 +166,20 @@ export class BossScene extends Phaser.Scene {
     this.keyD = kb.addKey('D');
     this.fireKey = kb.addKey('SPACE');
     this.pauseKey = kb.addKey('P');
+
+    kb.on('keydown', (ev: KeyboardEvent) => {
+      if (!this.paused) return;
+      if (ev.key === 'r' || ev.key === 'R') {
+        this.restartBoss();
+      } else if (ev.key === 'q' || ev.key === 'Q') {
+        this.quitToMenu();
+      } else if (ev.key === 'm' || ev.key === 'M') {
+        const muted = this.audio?.toggleMute() ?? false;
+        if (muted) this.audio?.stopMusic();
+        else this.playMusic();
+        this.pauseOverlay.show(); // Refresh mute label
+      }
+    });
   }
 
   private addPauseButton(): void {
