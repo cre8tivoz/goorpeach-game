@@ -30,8 +30,12 @@ export class OzempicPen {
   // Reusable rectangle buffer to eliminate per-frame GC allocations
   private readonly boundsRect = new Phaser.Geom.Rectangle();
 
+  /** Direct coordinate bounds arithmetic avoiding CPU-intensive Phaser matrix transform calculations. */
   getBounds(out: Phaser.Geom.Rectangle = this.boundsRect): Phaser.Geom.Rectangle {
-    return this.body.getBounds(out);
+    const w = PEN.width;
+    const h = PEN.height;
+    out.setTo(this.body.x - w / 2, this.body.y - h / 2, w, h);
+    return out;
   }
 
   get active(): boolean {
