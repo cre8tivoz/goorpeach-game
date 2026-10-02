@@ -6,7 +6,7 @@
   "description": "DoorPeach Apocalypse — a late-90s, GTA-1-style top-down Melbourne driving game.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && tsc --noEmit -p functions/tsconfig.json && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc --noEmit -p functions/tsconfig.json",
     "db:migrate:local": "wrangler d1 migrations apply goorpeach-scores --local --persist-to .wrangler/pdev",
