@@ -1,3 +1,4 @@
+/// <reference types="@cloudflare/workers-types" />
 /**
  * /api/scores — global high-score board, backed by Cloudflare D1.
  *

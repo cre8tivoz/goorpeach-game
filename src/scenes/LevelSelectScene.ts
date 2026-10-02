@@ -34,6 +34,8 @@ export class LevelSelectScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    this.announce('Select suburb: press numbers 1 to 5 or B for menu');
+
     const highest = Persistence.getHighestUnlocked();
 
     // Driving suburbs from level data, plus the Kew boss arena as the finale.
@@ -63,8 +65,33 @@ export class LevelSelectScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
       if (ev.key === 'Escape' || ev.key === 'b' || ev.key === 'B' || ev.key === 'm' || ev.key === 'M') {
         this.scene.start(SCENES.Menu);
+      } else {
+        const num = parseInt(ev.key, 10);
+        if (num >= 1 && num <= entries.length) {
+          const entry = entries[num - 1];
+          if (entry) {
+            if (num <= highest) {
+              void this.startEntry(entry.boss, entry.id);
+            } else {
+              this.showLockedMsg(num);
+            }
+          }
+        }
       }
     });
+  }
+
+  private showLockedMsg(id: number): void {
+    const prevName = id > 1 ? LEVELS[id - 2]?.name ?? `Suburb ${id - 1}` : 'previous suburb';
+    const msg = `Complete ${prevName} to unlock!`;
+    this.statusText.setText(msg);
+    this.statusText.setColor(COLOUR_HEX.hazard);
+    this.announce(msg);
+  }
+
+  private announce(msg: string): void {
+    const el = document.getElementById('game-a11y-status');
+    if (el) el.textContent = msg;
   }
 
   /** Level pick is a user gesture — unlock audio here if START was skipped. */
@@ -90,7 +117,7 @@ export class LevelSelectScene extends Phaser.Scene {
     bg.fillRect(centerX - rowW / 2, y - 11, rowW, 24);
     if (boss && unlocked) bg.lineStyle(2, COLOURS.magenta, 1).strokeRect(centerX - rowW / 2, y - 11, rowW, 24);
 
-    const label = unlocked ? name : `🔒 ${name}`;
+    const label = unlocked ? `[${id}] ${name}` : `[${id}] 🔒 ${name}`;
     const txt = this.add
       .text(centerX - rowW / 2 + 12, y, label, {
         fontFamily: boss ? 'Bungee' : 'JetBrains Mono',
@@ -104,9 +131,7 @@ export class LevelSelectScene extends Phaser.Scene {
     if (!unlocked) {
       txt.setColor(COLOUR_HEX.footpath).setAlpha(0.6);
       txt.on('pointerdown', () => {
-        const prevName = id > 1 ? LEVELS[id - 2]?.name ?? `Suburb ${id - 1}` : 'previous suburb';
-        this.statusText.setText(`Complete ${prevName} to unlock!`);
-        this.statusText.setColor(COLOUR_HEX.hazard);
+        this.showLockedMsg(id);
       });
       return;
     }
