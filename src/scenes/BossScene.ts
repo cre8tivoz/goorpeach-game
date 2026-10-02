@@ -326,6 +326,8 @@ export class BossScene extends Phaser.Scene {
 
   private updateFeeders(dt: number): void {
     const deltaMs = dt * 1000;
+    // Hoist player bounds outside feeder loop
+    const playerBounds = this.player.getBounds(this.tempRectPlayer);
     for (let i = this.feeders.length - 1; i >= 0; i--) {
       const c = this.feeders[i];
       if (!c || !c.active) {
@@ -335,7 +337,7 @@ export class BossScene extends Phaser.Scene {
       }
 
       // Player ram — stop the delivery (no ammo cost)
-      if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getBounds(this.tempRectPlayer), c.getBounds())) {
+      if (Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, c.getBounds())) {
         Particles.burst(this, c.sprite.x, c.sprite.y, 'courierBurst');
         ScreenShake.courierHit(this);
         this.score.addCourier(c.brand);
@@ -370,10 +372,11 @@ export class BossScene extends Phaser.Scene {
     // Passive creep keeps the pressure on
     this.feed = Math.min(BOSS.feed.phase2At, this.feed + BOSS.feed.passiveRisePerSec * dt);
 
-    // Pen hits on the nerd drain the meter
+    // Pen hits on the nerd drain the meter — hoist nerd bounds outside pen loop
+    const nerdBounds = this.nerd.getBounds(this.tempRectTarget);
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
-      if (pen && pen.active && Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), this.nerd.getBounds(this.tempRectTarget))) {
+      if (pen && pen.active && Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), nerdBounds)) {
         pen.destroy();
         this.pens.splice(i, 1);
         this.feed = Math.max(0, this.feed - BOSS.feed.penDrain);
@@ -421,10 +424,11 @@ export class BossScene extends Phaser.Scene {
     // Drive toward the exit (off the top of the arena)
     tiguan.y -= BOSS.escape.tiguanSpeed * dt;
 
-    // Pen hits disable it
+    // Pen hits disable it — hoist tiguan bounds outside pen loop
+    const tiguanBounds = tiguan.getBounds(this.tempRectTarget);
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
-      if (pen && pen.active && Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), tiguan.getBounds(this.tempRectTarget))) {
+      if (pen && pen.active && Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), tiguanBounds)) {
         pen.destroy();
         this.pens.splice(i, 1);
         this.tiguanHp -= 1;

@@ -69,14 +69,18 @@ export class Courier {
   private readonly hitBoundsRect = new Phaser.Geom.Rectangle();
   private readonly bodyBoundsRect = new Phaser.Geom.Rectangle();
 
+  /** Direct coordinate bounds arithmetic avoiding CPU-intensive Phaser matrix transform calculations. */
   getBounds(out: Phaser.Geom.Rectangle = this.boundsRect): Phaser.Geom.Rectangle {
-    return this.sprite.getBounds(out);
+    const { w, h } = this.displaySize;
+    out.setTo(this.sprite.x - w / 2, this.sprite.y - h / 2, w, h);
+    return out;
   }
 
+  /** Direct coordinate bounds arithmetic avoiding CPU-intensive Phaser matrix transform calculations. */
   getHitBounds(out: Phaser.Geom.Rectangle = this.hitBoundsRect): Phaser.Geom.Rectangle {
-    const b = this.sprite.getBounds(this.boundsRect);
+    const { w, h } = this.displaySize;
     const g = COURIER.hitGenerosity;
-    out.setTo(b.x - g, b.y - g, b.width + g * 2, b.height + g * 2);
+    out.setTo(this.sprite.x - w / 2 - g, this.sprite.y - h / 2 - g, w + g * 2, h + g * 2);
     return out;
   }
 

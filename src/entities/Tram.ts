@@ -37,19 +37,21 @@ export class Tram {
   private readonly boundsRect = new Phaser.Geom.Rectangle();
   private readonly hitBoundsRect = new Phaser.Geom.Rectangle();
 
+  /** Direct coordinate bounds arithmetic avoiding CPU-intensive Phaser matrix transform calculations. */
   getBounds(out: Phaser.Geom.Rectangle = this.boundsRect): Phaser.Geom.Rectangle {
-    return this.body.getBounds(out);
+    const length = getLayout().tram.length;
+    out.setTo(this.body.x - length / 2, this.body.y - TRAM.height / 2, length, TRAM.height);
+    return out;
   }
 
-  /** Hazard bounds — wide on X, tight on Y so a full brake clears the crossing. Reuses output rectangle. */
+  /** Hazard bounds — wide on X, tight on Y so a full brake clears the crossing. Reuses output rectangle. Direct arithmetic avoids Phaser matrix transforms. */
   getHitBounds(out: Phaser.Geom.Rectangle = this.hitBoundsRect): Phaser.Geom.Rectangle {
-    const b = this.body.getBounds(this.boundsRect);
-    out.setTo(
-      b.x - TRAM.hitPaddingX,
-      b.y - TRAM.hitPaddingY,
-      b.width + TRAM.hitPaddingX * 2,
-      b.height + TRAM.hitPaddingY * 2,
-    );
+    const length = getLayout().tram.length;
+    const x = this.body.x - length / 2 - TRAM.hitPaddingX;
+    const y = this.body.y - TRAM.height / 2 - TRAM.hitPaddingY;
+    const w = length + TRAM.hitPaddingX * 2;
+    const h = TRAM.height + TRAM.hitPaddingY * 2;
+    out.setTo(x, y, w, h);
     return out;
   }
 

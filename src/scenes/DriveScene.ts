@@ -360,6 +360,8 @@ export class DriveScene extends Phaser.Scene {
   }
 
   private updateCouriers(delta: number): void {
+    // Hoist player hit bounds outside loop to compute once per frame instead of per courier
+    const playerHitBounds = this.player.getHitBounds();
     for (let i = this.couriers.length - 1; i >= 0; i--) {
       const c = this.couriers[i];
       if (!c || !c.active || c.sprite.y > getLayout().height + 20) {
@@ -369,12 +371,13 @@ export class DriveScene extends Phaser.Scene {
       }
       c.update(delta);
 
-      // Pen hits (generous courier bounds — rule 9)
+      // Pen hits — hoist courier hit bounds outside pen loop to convert O(N*M) bounds calculations to O(N+M)
       let killed = false;
+      const cHitBounds = c.getHitBounds();
       for (let p = this.pens.length - 1; p >= 0; p--) {
         const pen = this.pens[p];
         if (!pen || !pen.active) continue;
-        if (Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), c.getHitBounds())) {
+        if (Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), cHitBounds)) {
           this.releasePen(p);
           if (c.hit()) {
             Particles.burst(this, c.sprite.x, c.sprite.y, 'courierBurst');
@@ -391,7 +394,7 @@ export class DriveScene extends Phaser.Scene {
 
       // Player damage — tight, player-favouring boxes on both sides so couriers
       // only hurt when they visibly touch the car (not via sprite padding).
-      if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getHitBounds(), c.getBodyBounds())) {
+      if (Phaser.Geom.Intersects.RectangleToRectangle(playerHitBounds, c.getBodyBounds())) {
         const dead = this.player.takeDamage();
         c.destroy();
         this.couriers.splice(i, 1);
@@ -407,6 +410,8 @@ export class DriveScene extends Phaser.Scene {
   }
 
   private updatePowerups(delta: number, effectiveScroll: number): void {
+    // Hoist player bounds outside powerup loop
+    const playerBounds = this.player.sprite.getBounds(this.tempRect);
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
       if (!p || !p.active) {
@@ -419,7 +424,7 @@ export class DriveScene extends Phaser.Scene {
         this.powerups.splice(i, 1);
         continue;
       }
-      if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.sprite.getBounds(this.tempRect), p.getBounds())) {
+      if (Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, p.getBounds())) {
         this.applyPowerUp(p.kind);
         p.destroy();
         this.powerups.splice(i, 1);
@@ -430,6 +435,8 @@ export class DriveScene extends Phaser.Scene {
   }
 
   private updateTrams(delta: number): void {
+    // Hoist player hit bounds outside tram loop
+    const playerHitBounds = this.player.getHitBounds();
     for (let i = this.trams.length - 1; i >= 0; i--) {
       const tram = this.trams[i];
       if (!tram) {
@@ -440,7 +447,7 @@ export class DriveScene extends Phaser.Scene {
       if (tram.offscreen) {
         tram.destroy();
         this.trams.splice(i, 1);
-      } else if (Phaser.Geom.Intersects.RectangleToRectangle(this.player.getHitBounds(), tram.getHitBounds())) {
+      } else if (Phaser.Geom.Intersects.RectangleToRectangle(playerHitBounds, tram.getHitBounds())) {
         Particles.burst(this, this.player.sprite.x, this.player.sprite.y, 'tramSparks');
         ScreenShake.tramDeath(this);
         this.gameOver('tram');
