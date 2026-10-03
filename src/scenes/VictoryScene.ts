@@ -4,6 +4,7 @@ import { Audio } from '../systems/Audio';
 import { Persistence } from '../systems/Persistence';
 import { CrtOverlay } from '../ui/CrtOverlay';
 import { getLayout } from '../systems/Layout';
+import { announce } from '../systems/A11y';
 
 /** Data passed from BossScene on a win. */
 export interface VictoryData {
@@ -60,6 +61,8 @@ export class VictoryScene extends Phaser.Scene {
 
     this.createButton('[ENTER] INITIALS', btn1Y, goToScoreboard);
     this.createButton('[M] MENU', btn2Y, goToMenu);
+
+    announce(`Victory! Kew is safe. Final Score: ${this.finalScore}. Press Enter to enter initials or M for menu.`);
 
     this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
       if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'i' || ev.key === 'I') {

@@ -5,6 +5,7 @@ import { Persistence } from '../systems/Persistence';
 import { Audio } from '../systems/Audio';
 import { getLayout } from '../systems/Layout';
 import { CrtOverlay } from '../ui/CrtOverlay';
+import { announce } from '../systems/A11y';
 
 /**
  * LevelSelectScene — pick a suburb. Levels unlock progressively (the furthest
@@ -34,7 +35,7 @@ export class LevelSelectScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.announce('Select suburb: press numbers 1 to 5 or B for menu');
+    announce('Select suburb: press numbers 1 to 5 or B for menu');
 
     const highest = Persistence.getHighestUnlocked();
 
@@ -86,12 +87,7 @@ export class LevelSelectScene extends Phaser.Scene {
     const msg = `Complete ${prevName} to unlock!`;
     this.statusText.setText(msg);
     this.statusText.setColor(COLOUR_HEX.hazard);
-    this.announce(msg);
-  }
-
-  private announce(msg: string): void {
-    const el = document.getElementById('game-a11y-status');
-    if (el) el.textContent = msg;
+    announce(msg);
   }
 
   /** Level pick is a user gesture — unlock audio here if START was skipped. */

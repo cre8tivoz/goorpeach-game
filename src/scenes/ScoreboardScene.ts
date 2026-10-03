@@ -4,6 +4,7 @@ import { Scoreboard } from '../systems/Scoreboard';
 import { getLayout } from '../systems/Layout';
 import { CrtOverlay } from '../ui/CrtOverlay';
 import type { ScoreEntry } from '../types';
+import { announce } from '../systems/A11y';
 
 /** Data passed in when arriving from a finished run. */
 export interface ScoreboardData {
@@ -127,6 +128,7 @@ export class ScoreboardScene extends Phaser.Scene {
     layer.add(confirm);
 
     this.statusText.setText('▲▼ tap letters • ←→ move • CONFIRM when done');
+    announce(`High score qualification! Score: ${this.pendingScore}. Use arrow keys to select 3 initials and press Enter or CONFIRM.`);
     this.renderSlots();
   }
 
@@ -283,5 +285,6 @@ export class ScoreboardScene extends Phaser.Scene {
     layer.add(menu);
 
     if (this.pendingScore === undefined) this.statusText.setText('');
+    announce('Global High Scores. Press M or click Menu to return to main menu.');
   }
 }

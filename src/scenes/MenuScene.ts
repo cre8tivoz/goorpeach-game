@@ -4,6 +4,7 @@ import { Audio } from '../systems/Audio';
 import { Persistence } from '../systems/Persistence';
 import { CrtOverlay } from '../ui/CrtOverlay';
 import { getLayout } from '../systems/Layout';
+import { announce } from '../systems/A11y';
 
 /**
  * MenuScene — title screen with chunky logo, Melbourne skyline hint, and the
@@ -145,6 +146,8 @@ export class MenuScene extends Phaser.Scene {
       this.audio = existing;
       this.statusText.setText('audio ready — tap START to drive');
     }
+
+    announce('Main Menu: Press 1 or Start to drive, 2 for Level Select, 3 for High Scores, 4 for Settings, 5 for Credits');
 
     new CrtOverlay(this);
   }
