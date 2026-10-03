@@ -5,3 +5,7 @@
 ## 2025-01-16 - Direct Coordinate Arithmetic for Entity Bounds & Hoisting Bounds Calculations
 **Learning:** Phaser 3 `GameObject.prototype.getBounds()` computes matrix transforms, scale, and world coordinates even when an output rectangle is passed. For entities with fixed or known dimensions (like projectiles, couriers, and trams), calling `getBounds()` inside inner collision loops (e.g., N couriers × M pens) recalculates world transforms O(N × M) times per frame.
 **Action:** Calculate bounds via direct arithmetic (`x - w/2`, `y - h/2`) for simple entities, and hoist static target bounds (`c.getHitBounds()`, `player.getHitBounds()`) outside nested collision loops to reduce per-frame bounds math from O(N × M) to O(N + M).
+
+## 2025-01-17 - State-Guarded Display Object Updates & Loop Iterator Elimination
+**Learning:** Re-configuring Phaser 3 GameObjects (`setTexture`, `setDisplaySize`, `setText`, `setVisible`) on every frame inside 60FPS update loops forces texture frame lookups and object property mutations even when values have not changed. Additionally, using `for...of` loops over arrays in update routines creates `ArrayIterator` objects every frame.
+**Action:** Guard scene element updates with state boolean flags (e.g. `landmarkVisible`) to configure texture/visibility once on state transition and update only positions per frame. Use indexed `for` loops instead of `for...of` iterators in hot per-frame rendering loops.
