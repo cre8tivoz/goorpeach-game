@@ -48,9 +48,8 @@ export class Courier {
   }
 
   update(delta: number): void {
-    const { road, width } = getLayout();
-
     if (this.cfg.weave) {
+      const { road, width } = getLayout();
       this.elapsed += delta / 1000;
       const offset = Math.sin(this.elapsed * this.cfg.weaveFreq * Math.PI * 2) * this.cfg.weaveAmp;
       const half = this.bodySize.w / 2;

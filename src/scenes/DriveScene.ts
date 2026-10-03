@@ -43,6 +43,7 @@ export class DriveScene extends Phaser.Scene {
   private roadLines!: Phaser.GameObjects.Graphics;
   private landmarkSprite?: Phaser.GameObjects.Image;
   private landmarkLabel!: Phaser.GameObjects.Text;
+  private landmarkVisible = false;
   private roadScroll = 0;
 
   private pens: OzempicPen[] = [];
@@ -130,6 +131,7 @@ export class DriveScene extends Phaser.Scene {
     this.roadLines = this.add.graphics();
     this.landmarkSprite?.destroy();
     this.landmarkSprite = undefined;
+    this.landmarkVisible = false;
     this.landmarkLabel = this.add
       .text(0, 0, '', { fontFamily: 'JetBrains Mono', fontSize: '5px', color: COLOUR_HEX.text })
       .setDepth(2)
@@ -606,15 +608,24 @@ export class DriveScene extends Phaser.Scene {
 
   private drawLandmark(): void {
     const lm = LANDMARKS[this.levelId];
-    this.landmarkLabel.setVisible(false);
     if (!lm) {
-      this.landmarkSprite?.setVisible(false);
+      if (this.landmarkVisible) {
+        this.landmarkSprite?.setVisible(false);
+        this.landmarkLabel.setVisible(false);
+        this.landmarkVisible = false;
+      }
       return;
     }
 
     const elapsed = this.levelData.durationMs - this.timeLeft * 1000;
-    if (elapsed < lm.showAtMs || elapsed > lm.showAtMs + lm.hideAfterMs) {
-      this.landmarkSprite?.setVisible(false);
+    const show = elapsed >= lm.showAtMs && elapsed <= lm.showAtMs + lm.hideAfterMs;
+
+    if (!show) {
+      if (this.landmarkVisible) {
+        this.landmarkSprite?.setVisible(false);
+        this.landmarkLabel.setVisible(false);
+        this.landmarkVisible = false;
+      }
       return;
     }
 
@@ -622,18 +633,21 @@ export class DriveScene extends Phaser.Scene {
     const x = width * lm.xFrac;
     const y = road.topY + 48 + (elapsed - lm.showAtMs) * 0.03;
 
-    if (!this.landmarkSprite) {
-      this.landmarkSprite = this.add.image(x, y, lm.sprite).setDepth(2);
+    // Configure texture, display size and text once when transitioning to visible
+    if (!this.landmarkVisible) {
+      if (!this.landmarkSprite) {
+        this.landmarkSprite = this.add.image(x, y, lm.sprite).setDepth(2).setOrigin(0.5, 0);
+      } else {
+        this.landmarkSprite.setTexture(lm.sprite);
+      }
       this.landmarkSprite.setDisplaySize(lm.displayW, lm.displayH);
-      this.landmarkSprite.setOrigin(0.5, 0);
-    } else {
-      this.landmarkSprite.setTexture(lm.sprite);
-      this.landmarkSprite.setDisplaySize(lm.displayW, lm.displayH);
-      this.landmarkSprite.setPosition(x, y);
       this.landmarkSprite.setVisible(true);
+      this.landmarkLabel.setText(lm.label).setVisible(true);
+      this.landmarkVisible = true;
     }
 
-    this.landmarkLabel.setText(lm.label).setPosition(x, y + lm.displayH + 2).setVisible(true);
+    this.landmarkSprite?.setPosition(x, y);
+    this.landmarkLabel.setPosition(x, y + lm.displayH + 2);
   }
 
   private drawRoadLines(): void {
@@ -643,7 +657,10 @@ export class DriveScene extends Phaser.Scene {
     const g = this.roadLines;
     g.clear();
     g.fillStyle(COLOURS.footpath, 0.85);
-    for (const x of road.lineColumns) {
+    const cols = road.lineColumns;
+    for (let i = 0; i < cols.length; i++) {
+      const x = cols[i];
+      if (x === undefined) continue;
       for (let y = start; y < road.bottomY; y += period) {
         const top = Math.max(y, road.topY);
         const bottom = Math.min(y + road.dashLength, road.bottomY);
