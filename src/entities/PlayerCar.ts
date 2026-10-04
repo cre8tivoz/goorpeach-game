@@ -64,6 +64,7 @@ export class PlayerCar {
       sprite.setTint(PLAYER.hitFlashTint);
     }
     sprite.setAngle(0);
+    this.updateHitBounds();
   }
 
   private applySteerVisual(intent: SteerIntent): void {
