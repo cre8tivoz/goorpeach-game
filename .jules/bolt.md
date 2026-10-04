@@ -9,3 +9,7 @@
 ## 2025-01-17 - State-Guarded Display Object Updates & Loop Iterator Elimination
 **Learning:** Re-configuring Phaser 3 GameObjects (`setTexture`, `setDisplaySize`, `setText`, `setVisible`) on every frame inside 60FPS update loops forces texture frame lookups and object property mutations even when values have not changed. Additionally, using `for...of` loops over arrays in update routines creates `ArrayIterator` objects every frame.
 **Action:** Guard scene element updates with state boolean flags (e.g. `landmarkVisible`) to configure texture/visibility once on state transition and update only positions per frame. Use indexed `for` loops instead of `for...of` iterators in hot per-frame rendering loops.
+
+## 2025-01-18 - Stateful Entity Bounding Box Caching on Position Update
+**Learning:** Calling `getBounds()`, `getHitBounds()`, or `getBodyBounds()` inside nested collision loops (e.g. N couriers × M pens) recalculates arithmetic offsets and bounds rectangles repeatedly during the same frame for unchanged entity positions. Maintaining pre-calculated bounding rectangles updated only when entity position changes (during `constructor`, `spawn`, and `update()`) reduces bounds accessor operations from O(N * M) arithmetic computations to O(1) field lookups per collision check.
+**Action:** Compute and store entity bounding rectangles (`boundsRect`, `hitBoundsRect`, `bodyBoundsRect`) in `updateBounds()` during position mutations, returning the cached rectangle directly in `getBounds()` / `getHitBounds()`.

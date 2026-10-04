@@ -36,6 +36,17 @@ export class PlayerCar {
     this.steerSpeed = PLAYER.steerSpeed;
     this.lives = PLAYER.startingLives;
     this.applyDamageVisual();
+    this.updateHitBounds();
+  }
+
+  private updateHitBounds(): void {
+    const w = this.sprite.displayWidth;
+    const h = this.sprite.displayHeight;
+    const x = this.sprite.x - w / 2;
+    const y = this.sprite.y - h / 2;
+    const ix = w * PLAYER.hitInsetXFrac;
+    const iy = h * PLAYER.hitInsetYFrac;
+    this.hitBoundsRect.setTo(x + ix, y + iy, w - ix * 2, h - iy * 2);
   }
 
   /** Progressive Commodore damage — worn sprite, then wrecked tint on last heart. */
@@ -119,20 +130,20 @@ export class PlayerCar {
     const halfW = sprite.displayWidth / 2;
     sprite.x = Phaser.Math.Clamp(sprite.x, road.footpathWidth + halfW, width - road.footpathWidth - halfW);
     sprite.y = Phaser.Math.Clamp(sprite.y, player.cruiseY - 8, player.brakeY);
+
+    this.updateHitBounds();
   }
 
   // Reusable rectangle buffers for collision bounds to eliminate per-frame GC allocations
   private readonly hitBoundsRect = new Phaser.Geom.Rectangle();
-  private readonly tempSpriteBounds = new Phaser.Geom.Rectangle();
 
   /**
-   * Tight, player-favouring damage hitbox. Reuses output rectangle to eliminate per-frame GC allocations.
+   * Tight, player-favouring damage hitbox. Reuses pre-calculated bounds rectangle to eliminate matrix/bounds math in collision loops.
    */
   getHitBounds(out: Phaser.Geom.Rectangle = this.hitBoundsRect): Phaser.Geom.Rectangle {
-    const b = this.sprite.getBounds(this.tempSpriteBounds);
-    const ix = b.width * PLAYER.hitInsetXFrac;
-    const iy = b.height * PLAYER.hitInsetYFrac;
-    out.setTo(b.x + ix, b.y + iy, b.width - ix * 2, b.height - iy * 2);
+    if (out !== this.hitBoundsRect) {
+      out.setTo(this.hitBoundsRect.x, this.hitBoundsRect.y, this.hitBoundsRect.width, this.hitBoundsRect.height);
+    }
     return out;
   }
 

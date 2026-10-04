@@ -45,6 +45,20 @@ export class Courier {
     if (scene.anims.exists('foodBagPulse')) {
       this.foodBag.play('foodBagPulse');
     }
+
+    this.updateBounds();
+  }
+
+  private updateBounds(): void {
+    const { w: dw, h: dh } = this.displaySize;
+    const { w: bw, h: bh } = this.bodySize;
+    const g = COURIER.hitGenerosity;
+    const sx = this.sprite.x;
+    const sy = this.sprite.y;
+
+    this.boundsRect.setTo(sx - dw / 2, sy - dh / 2, dw, dh);
+    this.hitBoundsRect.setTo(sx - dw / 2 - g, sy - dh / 2 - g, dw + g * 2, dh + g * 2);
+    this.bodyBoundsRect.setTo(sx - bw / 2, sy - bh / 2, bw, bh);
   }
 
   update(delta: number): void {
@@ -61,6 +75,7 @@ export class Courier {
     }
 
     this.foodBag.setPosition(this.sprite.x, this.sprite.y + 4);
+    this.updateBounds();
   }
 
   // Reusable rectangle buffers for collision bounds to eliminate per-frame GC allocations
@@ -68,18 +83,19 @@ export class Courier {
   private readonly hitBoundsRect = new Phaser.Geom.Rectangle();
   private readonly bodyBoundsRect = new Phaser.Geom.Rectangle();
 
-  /** Direct coordinate bounds arithmetic avoiding CPU-intensive Phaser matrix transform calculations. */
+  /** Pre-calculated bounds rectangle accessor; O(1) time without re-computing coordinate math during collision loops. */
   getBounds(out: Phaser.Geom.Rectangle = this.boundsRect): Phaser.Geom.Rectangle {
-    const { w, h } = this.displaySize;
-    out.setTo(this.sprite.x - w / 2, this.sprite.y - h / 2, w, h);
+    if (out !== this.boundsRect) {
+      out.setTo(this.boundsRect.x, this.boundsRect.y, this.boundsRect.width, this.boundsRect.height);
+    }
     return out;
   }
 
-  /** Direct coordinate bounds arithmetic avoiding CPU-intensive Phaser matrix transform calculations. */
+  /** Pre-calculated hit bounds rectangle accessor; O(1) time without re-computing coordinate math during collision loops. */
   getHitBounds(out: Phaser.Geom.Rectangle = this.hitBoundsRect): Phaser.Geom.Rectangle {
-    const { w, h } = this.displaySize;
-    const g = COURIER.hitGenerosity;
-    out.setTo(this.sprite.x - w / 2 - g, this.sprite.y - h / 2 - g, w + g * 2, h + g * 2);
+    if (out !== this.hitBoundsRect) {
+      out.setTo(this.hitBoundsRect.x, this.hitBoundsRect.y, this.hitBoundsRect.width, this.hitBoundsRect.height);
+    }
     return out;
   }
 
@@ -87,11 +103,12 @@ export class Courier {
    * Tight rider hitbox for player-damage collisions — the compact body size from
    * config, centred on the sprite, so couriers only hurt you when they visibly
    * touch (not via the sprite's transparent padding). Player-favouring (rule 9).
-   * Reuses output rectangle to eliminate per-frame GC allocations.
+   * Reuses pre-calculated bounds rectangle to eliminate per-frame math in collision loops.
    */
   getBodyBounds(out: Phaser.Geom.Rectangle = this.bodyBoundsRect): Phaser.Geom.Rectangle {
-    const { w, h } = this.bodySize;
-    out.setTo(this.sprite.x - w / 2, this.sprite.y - h / 2, w, h);
+    if (out !== this.bodyBoundsRect) {
+      out.setTo(this.bodyBoundsRect.x, this.bodyBoundsRect.y, this.bodyBoundsRect.width, this.bodyBoundsRect.height);
+    }
     return out;
   }
 
