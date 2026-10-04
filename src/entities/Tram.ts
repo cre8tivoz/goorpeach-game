@@ -27,31 +27,47 @@ export class Tram {
     if (scene.anims.exists('tramRoll')) {
       this.body.play('tramRoll');
     }
+
+    this.updateBounds();
+  }
+
+  private updateBounds(): void {
+    const length = getLayout().tram.length;
+    const bx = this.body.x;
+    const by = this.body.y;
+    const x = bx - length / 2;
+    const y = by - TRAM.height / 2;
+    this.boundsRect.setTo(x, y, length, TRAM.height);
+    this.hitBoundsRect.setTo(
+      x - TRAM.hitPaddingX,
+      y - TRAM.hitPaddingY,
+      length + TRAM.hitPaddingX * 2,
+      TRAM.height + TRAM.hitPaddingY * 2,
+    );
   }
 
   update(delta: number): void {
     this.body.x += this.velocityX * (delta / 1000);
+    this.updateBounds();
   }
 
   // Reusable rectangle buffers for collision bounds to eliminate per-frame GC allocations
   private readonly boundsRect = new Phaser.Geom.Rectangle();
   private readonly hitBoundsRect = new Phaser.Geom.Rectangle();
 
-  /** Direct coordinate bounds arithmetic avoiding CPU-intensive Phaser matrix transform calculations. */
+  /** Pre-calculated bounds rectangle accessor; O(1) time without re-computing coordinate math during collision loops. */
   getBounds(out: Phaser.Geom.Rectangle = this.boundsRect): Phaser.Geom.Rectangle {
-    const length = getLayout().tram.length;
-    out.setTo(this.body.x - length / 2, this.body.y - TRAM.height / 2, length, TRAM.height);
+    if (out !== this.boundsRect) {
+      out.setTo(this.boundsRect.x, this.boundsRect.y, this.boundsRect.width, this.boundsRect.height);
+    }
     return out;
   }
 
-  /** Hazard bounds — wide on X, tight on Y so a full brake clears the crossing. Reuses output rectangle. Direct arithmetic avoids Phaser matrix transforms. */
+  /** Pre-calculated hazard bounds accessor; O(1) time without re-computing coordinate math during collision loops. */
   getHitBounds(out: Phaser.Geom.Rectangle = this.hitBoundsRect): Phaser.Geom.Rectangle {
-    const length = getLayout().tram.length;
-    const x = this.body.x - length / 2 - TRAM.hitPaddingX;
-    const y = this.body.y - TRAM.height / 2 - TRAM.hitPaddingY;
-    const w = length + TRAM.hitPaddingX * 2;
-    const h = TRAM.height + TRAM.hitPaddingY * 2;
-    out.setTo(x, y, w, h);
+    if (out !== this.hitBoundsRect) {
+      out.setTo(this.hitBoundsRect.x, this.hitBoundsRect.y, this.hitBoundsRect.width, this.hitBoundsRect.height);
+    }
     return out;
   }
 

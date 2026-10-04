@@ -9,17 +9,22 @@ import { getLayout } from '../systems/Layout';
 export class OzempicPen {
   private readonly body: Phaser.GameObjects.Image;
 
+  // Reusable rectangle buffer pre-computed on position update to eliminate O(N*M) inner loop arithmetic
+  private readonly boundsRect = new Phaser.Geom.Rectangle();
+
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.body = scene.add.image(x, y, PEN.texture);
     this.body.setDisplaySize(PEN.width, PEN.height);
     this.body.setOrigin(0.5, 0.5);
     this.body.setDepth(11);
+    this.updateBounds();
   }
 
   /** Re-arm a pooled pen at a new muzzle position instead of allocating one. */
   spawn(x: number, y: number): void {
     this.body.setPosition(x, y);
     this.body.setActive(true).setVisible(true);
+    this.updateBounds();
   }
 
   /** Park the pen for reuse (pooled) — cheaper than destroy/re-create. */
@@ -27,14 +32,17 @@ export class OzempicPen {
     this.body.setActive(false).setVisible(false);
   }
 
-  // Reusable rectangle buffer to eliminate per-frame GC allocations
-  private readonly boundsRect = new Phaser.Geom.Rectangle();
-
-  /** Direct coordinate bounds arithmetic avoiding CPU-intensive Phaser matrix transform calculations. */
-  getBounds(out: Phaser.Geom.Rectangle = this.boundsRect): Phaser.Geom.Rectangle {
+  private updateBounds(): void {
     const w = PEN.width;
     const h = PEN.height;
-    out.setTo(this.body.x - w / 2, this.body.y - h / 2, w, h);
+    this.boundsRect.setTo(this.body.x - w / 2, this.body.y - h / 2, w, h);
+  }
+
+  /** Pre-calculated bounds rectangle accessor; O(1) time without re-computing coordinate math during collision loops. */
+  getBounds(out: Phaser.Geom.Rectangle = this.boundsRect): Phaser.Geom.Rectangle {
+    if (out !== this.boundsRect) {
+      out.setTo(this.boundsRect.x, this.boundsRect.y, this.boundsRect.width, this.boundsRect.height);
+    }
     return out;
   }
 
@@ -49,6 +57,7 @@ export class OzempicPen {
 
   update(delta: number): void {
     this.body.y -= PEN.speed * (delta / 1000);
+    this.boundsRect.y = this.body.y - PEN.height / 2;
   }
 
   destroy(): void {

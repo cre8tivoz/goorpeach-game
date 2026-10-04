@@ -44,6 +44,13 @@ export class PowerUp {
     this.icon.setDisplaySize(POWERUP.iconSize, POWERUP.iconSize);
     this.icon.setOrigin(0.5, 0.5);
     this.icon.setDepth(7);
+
+    this.updateBounds();
+  }
+
+  private updateBounds(): void {
+    const r = POWERUP.visualRadius;
+    this.boundsRect.setTo(this.x - r, this.y - r, r * 2, r * 2);
   }
 
   update(delta: number, effectiveScroll: number): void {
@@ -52,6 +59,7 @@ export class PowerUp {
     this.y = this.baseY + Math.sin(this.phase) * POWERUP.floatAmp;
     this.icon.setPosition(this.x, this.y);
     this.glow?.setPosition(this.x, this.y);
+    this.updateBounds();
   }
 
   get offscreen(): boolean {
@@ -62,9 +70,11 @@ export class PowerUp {
   // Reusable rectangle buffer to eliminate per-frame GC allocations
   private readonly boundsRect = new Phaser.Geom.Rectangle();
 
+  /** Pre-calculated bounds rectangle accessor; O(1) time without re-computing coordinate math during collision loops. */
   getBounds(out: Phaser.Geom.Rectangle = this.boundsRect): Phaser.Geom.Rectangle {
-    const r = POWERUP.visualRadius;
-    out.setTo(this.x - r, this.y - r, r * 2, r * 2);
+    if (out !== this.boundsRect) {
+      out.setTo(this.boundsRect.x, this.boundsRect.y, this.boundsRect.width, this.boundsRect.height);
+    }
     return out;
   }
 
