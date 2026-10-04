@@ -3,6 +3,7 @@ import { SCENES, COLOURS, COLOUR_HEX } from '../config';
 import { Audio } from '../systems/Audio';
 import { getLayout } from '../systems/Layout';
 import { CrtOverlay } from '../ui/CrtOverlay';
+import { announce } from '../systems/A11y';
 
 /** Data passed in from DriveScene when a run ends in death. */
 export interface GameOverData {
@@ -91,6 +92,8 @@ export class GameOverScene extends Phaser.Scene {
     this.createButton('[R] RESTART LEVEL', height * 0.63, doRestart);
     this.createButton('[S] SUBMIT SCORE', height * 0.73, doSubmit);
     this.createButton('[Q] QUIT TO MENU', height * 0.83, doQuit);
+
+    announce(`Game Over. ${this.params.message}. Final Score: ${this.params.score}. Press R to restart level, S to submit score, or Q for menu.`);
 
     this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
       if (ev.key === 'r' || ev.key === 'R') {

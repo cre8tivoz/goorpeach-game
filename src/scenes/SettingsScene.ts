@@ -5,6 +5,7 @@ import { Persistence } from '../systems/Persistence';
 import { CrtOverlay } from '../ui/CrtOverlay';
 import { getLayout } from '../systems/Layout';
 import type { GameSettings, TouchInputMode } from '../types';
+import { announce } from '../systems/A11y';
 
 /**
  * SettingsScene — volume, CRT, reduced motion, touch sensitivity and input mode.
@@ -53,6 +54,8 @@ export class SettingsScene extends Phaser.Scene {
     });
 
     this.crt = new CrtOverlay(this);
+
+    announce('Settings menu: adjust audio volume, CRT scanlines, reduced motion, touch sensitivity, and touch input mode. Press B to go back.');
   }
 
   private addVolumeRow(

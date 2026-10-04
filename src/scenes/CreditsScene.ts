@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { SCENES, COLOURS, COLOUR_HEX, FONTS } from '../config';
 import { getLayout } from '../systems/Layout';
 import { CrtOverlay } from '../ui/CrtOverlay';
+import { announce } from '../systems/A11y';
 
 /** Condensed attribution from CREDITS.md — audit-clean, fits the screen. */
 const CREDIT_LINES = [
@@ -66,5 +67,7 @@ export class CreditsScene extends Phaser.Scene {
         this.scene.start(SCENES.Menu);
       }
     });
+
+    announce('Credits screen: DoorPeach Apocalypse attributions. Press B or Esc to return to main menu.');
   }
 }
