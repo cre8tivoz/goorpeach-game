@@ -48,13 +48,14 @@ export class SettingsScene extends Phaser.Scene {
     back.on('pointerup', () => this.goBack());
 
     this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
-      if (ev.key === '1') this.cycleVolume('musicVolume');
-      else if (ev.key === '2') this.cycleVolume('soundVolume');
-      else if (ev.key === '3') this.toggleSetting('crtScanlines');
-      else if (ev.key === '4') this.toggleSetting('reducedMotion');
-      else if (ev.key === '5') this.cycleSensitivity();
-      else if (ev.key === '6') this.toggleMode();
-      else if (ev.key === 'Escape' || ev.key === 'b' || ev.key === 'B' || ev.key === 'm' || ev.key === 'M') {
+      const k = ev.key;
+      if (k === '1' || k === 'Numpad1') this.cycleVolume('musicVolume');
+      else if (k === '2' || k === 'Numpad2') this.cycleVolume('soundVolume');
+      else if (k === '3' || k === 'Numpad3') this.toggleSetting('crtScanlines');
+      else if (k === '4' || k === 'Numpad4') this.toggleSetting('reducedMotion');
+      else if (k === '5' || k === 'Numpad5') this.cycleSensitivity();
+      else if (k === '6' || k === 'Numpad6') this.toggleMode();
+      else if (k === 'Escape' || k === 'b' || k === 'B' || k === 'm' || k === 'M') {
         this.goBack();
       }
     });
