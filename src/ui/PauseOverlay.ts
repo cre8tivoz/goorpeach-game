@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { COLOURS, COLOUR_HEX, FONTS, PAUSE } from '../config';
 import { getLayout } from '../systems/Layout';
+import { announce } from '../systems/A11y';
 
 export interface PauseOverlayCallbacks {
   onResume: () => void;
@@ -65,6 +66,7 @@ export class PauseOverlay {
     this.muteLabel = this.addButton(this.muteText(), y, () => {
       callbacks.onMuteToggle();
       this.muteLabel.setText(this.muteText());
+      announce(this.callbacks.getMuted() ? 'Audio muted' : 'Audio unmuted');
     });
   }
 
@@ -126,9 +128,13 @@ export class PauseOverlay {
     this.open = true;
     this.muteLabel.setText(this.muteText());
     this.container.setVisible(true);
+    announce('Game paused: Press P or click Resume to continue, R to restart level, Q to quit to menu, or M to toggle audio.');
   }
 
   hide(): void {
+    if (this.open) {
+      announce('Game resumed.');
+    }
     this.open = false;
     this.container.setVisible(false);
   }
