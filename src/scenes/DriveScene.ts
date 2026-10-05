@@ -179,6 +179,8 @@ export class DriveScene extends Phaser.Scene {
       .setPadding(4, 6, 4, 6)
       .setDepth(5000)
       .setInteractive({ useHandCursor: true });
+    btn.on('pointerover', () => btn.setColor(COLOUR_HEX.cyan));
+    btn.on('pointerout', () => btn.setColor(COLOUR_HEX.text));
     btn.on('pointerup', () => this.togglePause());
   }
 

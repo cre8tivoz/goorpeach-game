@@ -88,6 +88,14 @@ export class MenuScene extends Phaser.Scene {
       this.createButton(label, firstY + btnGap * i, onActivate);
     });
 
+    const toggleMute = (): void => {
+      if (this.audio) {
+        const nowMuted = this.audio.toggleMute();
+        muteBtn.setText(nowMuted ? 'M' : '♫');
+        announce(nowMuted ? 'Audio muted' : 'Audio unmuted');
+      }
+    };
+
     // Keyboard shortcuts for menu navigation
     this.input.keyboard?.on('keydown', (ev: KeyboardEvent) => {
       if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 's' || ev.key === 'S' || ev.key === '1') {
@@ -101,10 +109,7 @@ export class MenuScene extends Phaser.Scene {
       } else if (ev.key === '5') {
         this.scene.start(SCENES.Credits);
       } else if (ev.key === 'm' || ev.key === 'M') {
-        if (this.audio) {
-          const nowMuted = this.audio.toggleMute();
-          muteBtn.setText(nowMuted ? 'M' : '♫');
-        }
+        toggleMute();
       }
     });
 
@@ -120,12 +125,9 @@ export class MenuScene extends Phaser.Scene {
       .setPadding(6)
       .setInteractive({ useHandCursor: true });
 
-    muteBtn.on('pointerdown', () => {
-      if (this.audio) {
-        const nowMuted = this.audio.toggleMute();
-        muteBtn.setText(nowMuted ? 'M' : '♫');
-      }
-    });
+    muteBtn.on('pointerover', () => muteBtn.setColor(COLOUR_HEX.cyan));
+    muteBtn.on('pointerout', () => muteBtn.setColor(COLOUR_HEX.text));
+    muteBtn.on('pointerdown', () => toggleMute());
 
     // Status line (for unlock feedback) — sits above the button panel, clear of it.
     this.statusText = this.add
