@@ -76,7 +76,6 @@ export class DriveScene extends Phaser.Scene {
   private endingRun = false;
   private runScoreSeed = 0; // score carried in from earlier levels this run
   private levelStartScore = 0; // snapshot for "Restart Level"
-  private readonly tempRect = new Phaser.Geom.Rectangle();
 
   constructor() {
     super(SCENES.Drive);
@@ -362,11 +361,12 @@ export class DriveScene extends Phaser.Scene {
   }
 
   private updateCouriers(delta: number): void {
-    // Hoist player hit bounds outside loop to compute once per frame instead of per courier
+    // Hoist player hit bounds and offscreen threshold outside loop to compute once per frame instead of per courier
     const playerHitBounds = this.player.getHitBounds();
+    const bottomThreshold = getLayout().height + 20;
     for (let i = this.couriers.length - 1; i >= 0; i--) {
       const c = this.couriers[i];
-      if (!c || !c.active || c.sprite.y > getLayout().height + 20) {
+      if (!c || !c.active || c.sprite.y > bottomThreshold) {
         c?.destroy();
         this.couriers.splice(i, 1);
         continue;
@@ -412,8 +412,8 @@ export class DriveScene extends Phaser.Scene {
   }
 
   private updatePowerups(delta: number, effectiveScroll: number): void {
-    // Hoist player bounds outside powerup loop
-    const playerBounds = this.player.sprite.getBounds(this.tempRect);
+    // Use pre-calculated player hit bounds directly without copying into buffer
+    const playerBounds = this.player.getHitBounds();
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
       if (!p || !p.active) {

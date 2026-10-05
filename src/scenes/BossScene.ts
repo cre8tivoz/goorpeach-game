@@ -71,8 +71,9 @@ export class BossScene extends Phaser.Scene {
   private pauseKey?: Phaser.Input.Keyboard.Key;
 
   private readonly feederBrands: CourierBrand[] = ['GoorPeach', 'ChewSnog', 'GorgeRush'];
-  private readonly tempRectPlayer = new Phaser.Geom.Rectangle();
-  private readonly tempRectTarget = new Phaser.Geom.Rectangle();
+  private readonly playerBoundsRect = new Phaser.Geom.Rectangle();
+  private readonly nerdBoundsRect = new Phaser.Geom.Rectangle();
+  private readonly tiguanBoundsRect = new Phaser.Geom.Rectangle();
 
   constructor() {
     super(SCENES.Boss);
@@ -110,9 +111,11 @@ export class BossScene extends Phaser.Scene {
     this.nerd = this.add.image(BOSS.nerd.x, BOSS.nerd.y, BOSS.nerd.texture);
     this.nerd.setDisplaySize(BOSS.nerd.w, BOSS.nerd.h);
     this.nerd.setOrigin(0.5, 0.5);
+    this.updateNerdBounds();
 
     // Player car (free movement in the arena)
     this.player = this.add.sprite(240, 200, 'playerClean').setScale(BOSS.playerScale);
+    this.updatePlayerBounds();
 
     this.touch = new TouchControls(this);
     this.pauseOverlay = new PauseOverlay(this, {
@@ -260,6 +263,7 @@ export class BossScene extends Phaser.Scene {
       BOSS.arena.y,
       BOSS.arena.y + BOSS.arena.h,
     );
+    this.updatePlayerBounds();
 
     // Fire (pens go up the screen toward the nerd)
     const offCooldown = time - this.lastFireTime > BOSS.fireCooldown;
@@ -324,10 +328,29 @@ export class BossScene extends Phaser.Scene {
     }
   }
 
+  private updatePlayerBounds(): void {
+    const w = this.player.displayWidth;
+    const h = this.player.displayHeight;
+    this.playerBoundsRect.setTo(this.player.x - w / 2, this.player.y - h / 2, w, h);
+  }
+
+  private updateNerdBounds(): void {
+    const w = BOSS.nerd.w;
+    const h = BOSS.nerd.h;
+    this.nerdBoundsRect.setTo(this.nerd.x - w / 2, this.nerd.y - h / 2, w, h);
+  }
+
+  private updateTiguanBounds(): void {
+    if (!this.tiguan) return;
+    const w = this.tiguan.displayWidth;
+    const h = this.tiguan.displayHeight;
+    this.tiguanBoundsRect.setTo(this.tiguan.x - w / 2, this.tiguan.y - h / 2, w, h);
+  }
+
   private updateFeeders(dt: number): void {
     const deltaMs = dt * 1000;
-    // Hoist player bounds outside feeder loop
-    const playerBounds = this.player.getBounds(this.tempRectPlayer);
+    // Use pre-calculated player bounds O(1) field lookup without per-frame matrix math
+    const playerBounds = this.playerBoundsRect;
     for (let i = this.feeders.length - 1; i >= 0; i--) {
       const c = this.feeders[i];
       if (!c || !c.active) {
@@ -372,8 +395,8 @@ export class BossScene extends Phaser.Scene {
     // Passive creep keeps the pressure on
     this.feed = Math.min(BOSS.feed.phase2At, this.feed + BOSS.feed.passiveRisePerSec * dt);
 
-    // Pen hits on the nerd drain the meter — hoist nerd bounds outside pen loop
-    const nerdBounds = this.nerd.getBounds(this.tempRectTarget);
+    // Pen hits on the nerd drain the meter — use cached nerd bounds without per-frame matrix math
+    const nerdBounds = this.nerdBoundsRect;
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
       if (pen && pen.active && Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), nerdBounds)) {
@@ -423,9 +446,10 @@ export class BossScene extends Phaser.Scene {
 
     // Drive toward the exit (off the top of the arena)
     tiguan.y -= BOSS.escape.tiguanSpeed * dt;
+    this.updateTiguanBounds();
 
-    // Pen hits disable it — hoist tiguan bounds outside pen loop
-    const tiguanBounds = tiguan.getBounds(this.tempRectTarget);
+    // Pen hits disable it — use cached tiguan bounds without per-frame matrix math
+    const tiguanBounds = this.tiguanBoundsRect;
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
       if (pen && pen.active && Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), tiguanBounds)) {
@@ -453,6 +477,7 @@ export class BossScene extends Phaser.Scene {
     this.nerd.setVisible(true);
     this.nerd.setPosition(BOSS.nerd.x, BOSS.nerd.y);
     this.nerd.clearTint();
+    this.updateNerdBounds();
     this.feed = BOSS.feed.secondWind; // second-wind difficulty
     this.phase = 'feeding';
     this.audio?.playCourierCrash(0.8);
