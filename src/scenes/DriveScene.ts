@@ -362,11 +362,12 @@ export class DriveScene extends Phaser.Scene {
   }
 
   private updateCouriers(delta: number): void {
-    // Hoist player hit bounds outside loop to compute once per frame instead of per courier
+    // Hoist player hit bounds and offscreen threshold outside loop to compute once per frame instead of per courier
     const playerHitBounds = this.player.getHitBounds();
+    const bottomThreshold = getLayout().height + 20;
     for (let i = this.couriers.length - 1; i >= 0; i--) {
       const c = this.couriers[i];
-      if (!c || !c.active || c.sprite.y > getLayout().height + 20) {
+      if (!c || !c.active || c.sprite.y > bottomThreshold) {
         c?.destroy();
         this.couriers.splice(i, 1);
         continue;
@@ -412,8 +413,8 @@ export class DriveScene extends Phaser.Scene {
   }
 
   private updatePowerups(delta: number, effectiveScroll: number): void {
-    // Hoist player bounds outside powerup loop
-    const playerBounds = this.player.sprite.getBounds(this.tempRect);
+    // Use pre-calculated player hit bounds instead of computing Phaser Sprite matrix getBounds() per frame
+    const playerBounds = this.player.getHitBounds(this.tempRect);
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const p = this.powerups[i];
       if (!p || !p.active) {
