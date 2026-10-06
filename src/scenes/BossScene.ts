@@ -68,7 +68,6 @@ export class BossScene extends Phaser.Scene {
   private keyS?: Phaser.Input.Keyboard.Key;
   private keyD?: Phaser.Input.Keyboard.Key;
   private fireKey?: Phaser.Input.Keyboard.Key;
-  private pauseKey?: Phaser.Input.Keyboard.Key;
 
   private readonly feederBrands: CourierBrand[] = ['GoorPeach', 'ChewSnog', 'GorgeRush'];
   private readonly playerBoundsRect = new Phaser.Geom.Rectangle();
@@ -168,10 +167,10 @@ export class BossScene extends Phaser.Scene {
     this.keyS = kb.addKey('S');
     this.keyD = kb.addKey('D');
     this.fireKey = kb.addKey('SPACE');
-    this.pauseKey = kb.addKey('P');
 
+    kb.off('keydown');
     kb.on('keydown', (ev: KeyboardEvent) => {
-      if (ev.key === 'Escape') {
+      if (ev.key === 'Escape' || ev.key === 'p' || ev.key === 'P') {
         this.togglePause();
         return;
       }
@@ -248,11 +247,6 @@ export class BossScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     if (this.over) return;
-
-    if (this.pauseKey && Phaser.Input.Keyboard.JustDown(this.pauseKey)) {
-      this.togglePause();
-      return;
-    }
 
     if (this.paused) return;
     const dt = delta / 1000;
