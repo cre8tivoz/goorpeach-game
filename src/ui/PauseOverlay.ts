@@ -57,7 +57,7 @@ export class PauseOverlay {
 
     let y = cardTop + 62;
     const gap = height * 0.09;
-    this.addButton('[P] RESUME', y, () => callbacks.onResume());
+    this.addButton('[P/ESC] RESUME', y, () => callbacks.onResume());
     y += gap;
     this.addButton('[R] RESTART', y, () => callbacks.onRestart());
     y += gap;
@@ -128,7 +128,7 @@ export class PauseOverlay {
     this.open = true;
     this.muteLabel.setText(this.muteText());
     this.container.setVisible(true);
-    announce('Game paused: Press P or click Resume to continue, R to restart level, Q to quit to menu, or M to toggle audio.');
+    announce('Game paused: Press P or ESC or click Resume to continue, R to restart level, Q to quit to menu, or M to toggle audio.');
   }
 
   hide(): void {

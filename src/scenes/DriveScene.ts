@@ -195,6 +195,10 @@ export class DriveScene extends Phaser.Scene {
     this.pauseKey = kb.addKey('P');
 
     kb.on('keydown', (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape') {
+        this.togglePause();
+        return;
+      }
       if (!this.paused) return;
       if (ev.key === 'r' || ev.key === 'R') {
         this.restartLevel();
