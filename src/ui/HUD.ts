@@ -72,7 +72,7 @@ export class HUD {
       .setOrigin(0.5);
 
     scene.add
-      .text(centerX, hud.hintY, 'A/D ←→ steer • S↓ brake • SPACE fire • P menu', {
+      .text(centerX, hud.hintY, 'A/D ←→ steer • S↓ brake • SPACE fire • P/ESC menu', {
         fontFamily: 'JetBrains Mono',
         fontSize: '6px',
         color: COLOUR_HEX.footpath,

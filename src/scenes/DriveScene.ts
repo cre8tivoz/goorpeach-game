@@ -64,7 +64,6 @@ export class DriveScene extends Phaser.Scene {
   private keyD?: Phaser.Input.Keyboard.Key;
   private keyS?: Phaser.Input.Keyboard.Key;
   private fireKey?: Phaser.Input.Keyboard.Key;
-  private pauseKey?: Phaser.Input.Keyboard.Key;
 
   // Predictable spawn cursors
   private nextCourierWaveIndex = 0;
@@ -192,9 +191,13 @@ export class DriveScene extends Phaser.Scene {
     this.keyD = kb.addKey('D');
     this.keyS = kb.addKey('S');
     this.fireKey = kb.addKey('SPACE');
-    this.pauseKey = kb.addKey('P');
 
+    kb.off('keydown');
     kb.on('keydown', (ev: KeyboardEvent) => {
+      if (ev.key === 'Escape' || ev.key === 'p' || ev.key === 'P') {
+        this.togglePause();
+        return;
+      }
       if (!this.paused) return;
       if (ev.key === 'r' || ev.key === 'R') {
         this.restartLevel();
@@ -262,11 +265,6 @@ export class DriveScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     if (!this.player || this.endingRun) return;
-
-    if (this.pauseKey && Phaser.Input.Keyboard.JustDown(this.pauseKey)) {
-      this.togglePause();
-      return;
-    }
 
     if (this.paused) return;
 
