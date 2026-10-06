@@ -48,6 +48,8 @@ export class BossScene extends Phaser.Scene {
   private paused = false;
 
   private pens: OzempicPen[] = [];
+  /** Inactive pens parked for reuse — pens fire frequently, so pooling avoids GC churn. */
+  private penPool: OzempicPen[] = [];
   private feeders: Courier[] = [];
   private feederSpawnIndex = 0;
   private lastFireTime = 0;
@@ -91,7 +93,10 @@ export class BossScene extends Phaser.Scene {
     this.over = false;
     this.paused = false;
     this.time.timeScale = 1;
+    for (const pen of this.pens) pen.destroy();
+    for (const pen of this.penPool) pen.destroy();
     this.pens = [];
+    this.penPool = [];
     this.feeders = [];
     this.feederSpawnIndex = 0;
     this.lastFireTime = 0;
@@ -272,7 +277,11 @@ export class BossScene extends Phaser.Scene {
     const wantFire = (this.fireKey?.isDown ?? false) || (offCooldown && this.touch.consumeFire());
     if (wantFire && offCooldown && this.ammo > 0) {
       this.ammo -= 1;
-      this.pens.push(new OzempicPen(this, this.player.x, this.player.y - 24));
+      const x = this.player.x;
+      const y = this.player.y - 24;
+      const pen = this.penPool.pop();
+      if (pen) pen.spawn(x, y);
+      this.pens.push(pen ?? new OzempicPen(this, x, y));
       this.playSfx('ozempicFire', 0.6);
       this.lastFireTime = time;
     }
@@ -290,15 +299,23 @@ export class BossScene extends Phaser.Scene {
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
       if (!pen || !pen.active) {
-        pen?.destroy();
-        this.pens.splice(i, 1);
+        this.releasePen(i);
         continue;
       }
       pen.update(delta);
       if (pen.offscreen) {
-        pen.destroy();
-        this.pens.splice(i, 1);
+        this.releasePen(i);
       }
+    }
+  }
+
+  /** Park a spent pen back in the pool and remove it from the active list. */
+  private releasePen(index: number): void {
+    const pen = this.pens[index];
+    this.pens.splice(index, 1);
+    if (pen) {
+      pen.deactivate();
+      this.penPool.push(pen);
     }
   }
 
@@ -402,8 +419,7 @@ export class BossScene extends Phaser.Scene {
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
       if (pen && pen.active && Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), nerdBounds)) {
-        pen.destroy();
-        this.pens.splice(i, 1);
+        this.releasePen(i);
         this.feed = Math.max(0, this.feed - BOSS.feed.penDrain);
         this.showNerdState('hit');
       }
@@ -455,8 +471,7 @@ export class BossScene extends Phaser.Scene {
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
       if (pen && pen.active && Phaser.Geom.Intersects.RectangleToRectangle(pen.getBounds(), tiguanBounds)) {
-        pen.destroy();
-        this.pens.splice(i, 1);
+        this.releasePen(i);
         this.tiguanHp -= 1;
         tiguan.setTint(0xffffff);
         this.time.delayedCall(60, () => tiguan.active && tiguan.clearTint());
