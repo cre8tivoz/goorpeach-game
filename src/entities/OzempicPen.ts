@@ -50,9 +50,14 @@ export class OzempicPen {
     return this.body.active;
   }
 
-  /** True once it has flown off the top of the play area. */
+  /** True once it has flown off the top of the play area. Optional topY overrides getLayout() call in hot loops. */
+  isOffscreen(topY?: number): boolean {
+    const limitY = topY ?? getLayout().road.topY;
+    return this.body.y < limitY - 4;
+  }
+
   get offscreen(): boolean {
-    return this.body.y < getLayout().road.topY - 4;
+    return this.isOffscreen();
   }
 
   update(delta: number): void {

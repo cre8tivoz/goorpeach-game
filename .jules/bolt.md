@@ -13,3 +13,7 @@
 ## 2025-01-18 - Stateful Entity Bounding Box Caching on Position Update
 **Learning:** Calling `getBounds()`, `getHitBounds()`, or `getBodyBounds()` inside nested collision loops (e.g. N couriers × M pens) recalculates arithmetic offsets and bounds rectangles repeatedly during the same frame for unchanged entity positions. Maintaining pre-calculated bounding rectangles updated only when entity position changes (during `constructor`, `spawn`, and `update()`) reduces bounds accessor operations from O(N * M) arithmetic computations to O(1) field lookups per collision check.
 **Action:** Compute and store entity bounding rectangles (`boundsRect`, `hitBoundsRect`, `bodyBoundsRect`) in `updateBounds()` during position mutations, returning the cached rectangle directly in `getBounds()` / `getHitBounds()`.
+
+## 2025-01-19 - Hoisting and Caching Global Layout Lookups in 60FPS Update Loops
+**Learning:** In Phaser 3 scene update loops, calling functions like `getLayout()` across scene update routines and entity methods (`PlayerCar.update`, `OzempicPen.offscreen`, `updateCouriers`, `runSpawns`) executes global state lookups, object destructuring, and DOM checks dozens of times per frame.
+**Action:** Obtain `const layout = getLayout();` once at the top of the scene's `update()` method and pass `layout` or specific values down to helper functions and entity update routines.

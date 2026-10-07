@@ -268,7 +268,10 @@ export class DriveScene extends Phaser.Scene {
 
     if (this.paused) return;
 
-    this.player.update(delta, Date.now(), this.buildIntent());
+    // Cache active layout once per frame to eliminate redundant getLayout() function calls in update loop
+    const layout = getLayout();
+
+    this.player.update(delta, Date.now(), this.buildIntent(), layout);
 
     // Scrolling road — tied to brake (S / ↓ / hold brake zone)
     const effectiveScroll = this.scrollSpeed * this.player.getSpeedRatio();
@@ -285,9 +288,9 @@ export class DriveScene extends Phaser.Scene {
       this.lastFireTime = time;
     }
 
-    this.updatePens(delta);
-    this.runSpawns();
-    this.updateCouriers(delta);
+    this.updatePens(delta, layout.road.topY);
+    this.runSpawns(layout);
+    this.updateCouriers(delta, layout.height);
     this.updatePowerups(delta, effectiveScroll);
     this.updateTrams(delta);
 
@@ -299,7 +302,7 @@ export class DriveScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  private updatePens(delta: number): void {
+  private updatePens(delta: number, roadTopY: number): void {
     for (let i = this.pens.length - 1; i >= 0; i--) {
       const pen = this.pens[i];
       if (!pen || !pen.active) {
@@ -307,14 +310,14 @@ export class DriveScene extends Phaser.Scene {
         continue;
       }
       pen.update(delta);
-      if (pen.offscreen) {
+      if (pen.isOffscreen(roadTopY)) {
         this.releasePen(i);
       }
     }
   }
 
-  private runSpawns(): void {
-    const { road } = getLayout();
+  private runSpawns(layout = getLayout()): void {
+    const { road, centerX } = layout;
     const elapsed = this.levelData.durationMs - this.timeLeft * 1000;
 
     while (
@@ -323,7 +326,7 @@ export class DriveScene extends Phaser.Scene {
     ) {
       const wave = this.levelData.courierWaves[this.nextCourierWaveIndex];
       wave?.spawns.forEach((spawn, idx) => {
-        const x = road.laneXs[idx % road.laneXs.length] ?? getLayout().centerX;
+        const x = road.laneXs[idx % road.laneXs.length] ?? centerX;
         const y = road.topY + COURIER.spawnInsetY;
         this.couriers.push(this.spawnCourier(spawn.brand, x, y));
       });
@@ -336,7 +339,7 @@ export class DriveScene extends Phaser.Scene {
     ) {
       const p = this.levelData.powerUpSpawns[this.nextPowerupIndex];
       const idx = this.nextPowerupIndex % road.laneXs.length;
-      const px = road.laneXs[idx % road.laneXs.length] ?? getLayout().centerX;
+      const px = road.laneXs[idx % road.laneXs.length] ?? centerX;
       const py = road.topY - POWERUP.spawnAboveRoad;
       if (p) this.powerups.push(new PowerUp(this, px, py, p.kind));
       this.nextPowerupIndex += 1;
@@ -344,7 +347,7 @@ export class DriveScene extends Phaser.Scene {
 
     const tramTimes = this.levelData.tramSpawnTimes;
     while (this.nextTramIndex < tramTimes.length && elapsed >= (tramTimes[this.nextTramIndex] ?? Infinity)) {
-      this.spawnTram();
+      this.spawnTram(layout);
       this.nextTramIndex += 1;
     }
   }
@@ -360,10 +363,10 @@ export class DriveScene extends Phaser.Scene {
     }
   }
 
-  private updateCouriers(delta: number): void {
+  private updateCouriers(delta: number, sceneHeight = getLayout().height): void {
     // Hoist player hit bounds and offscreen threshold outside loop to compute once per frame instead of per courier
     const playerHitBounds = this.player.getHitBounds();
-    const bottomThreshold = getLayout().height + 20;
+    const bottomThreshold = sceneHeight + 20;
     for (let i = this.couriers.length - 1; i >= 0; i--) {
       const c = this.couriers[i];
       if (!c || !c.active || c.sprite.y > bottomThreshold) {
@@ -502,8 +505,8 @@ export class DriveScene extends Phaser.Scene {
   }
 
   /** Fixed cross-street depth — ahead of cruise lane; brake drops you clear. */
-  private tramCrossY(): number {
-    return getLayout().player.cruiseY - TRAM.crossAheadOffset;
+  private tramCrossY(layout = getLayout()): number {
+    return layout.player.cruiseY - TRAM.crossAheadOffset;
   }
 
   /** Tram body crosses — ding first, then duck driving music under it. */
@@ -519,9 +522,9 @@ export class DriveScene extends Phaser.Scene {
     });
   }
 
-  private spawnTram(): void {
+  private spawnTram(layout = getLayout()): void {
     const direction: TramDirection = this.nextTramIndex % 2 === 0 ? 'left' : 'right';
-    const crossY = this.tramCrossY();
+    const crossY = this.tramCrossY(layout);
     const warning = new TramWarning(this, crossY, direction);
     this.tramWarnings.push(warning);
 
