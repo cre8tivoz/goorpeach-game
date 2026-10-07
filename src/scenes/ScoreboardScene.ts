@@ -116,7 +116,7 @@ export class ScoreboardScene extends Phaser.Scene {
       slot.on('pointerout', () => this.renderSlots());
       slot.on('pointerup', () => {
         this.cursor = i;
-        this.renderSlots();
+        this.renderSlots(true);
       });
 
       const down = this.add
@@ -148,17 +148,19 @@ export class ScoreboardScene extends Phaser.Scene {
   private changeLetter(index: number, delta: number): void {
     this.cursor = index;
     this.letters[index] = ((this.letters[index] ?? 0) + delta + 26) % 26;
-    this.renderSlots();
+    this.renderSlots(true);
   }
 
-  private renderSlots(): void {
+  private renderSlots(announceChanges = false): void {
     this.slotTexts.forEach((t, i) => {
       t.setText(String.fromCharCode(65 + (this.letters[i] ?? 0)));
       t.setColor(i === this.cursor ? COLOUR_HEX.caution : COLOUR_HEX.text);
     });
-    const initials = this.letters.map((n) => String.fromCharCode(65 + n)).join('');
-    const activeLetter = String.fromCharCode(65 + (this.letters[this.cursor] ?? 0));
-    announce(`Initials: ${initials}. Slot ${this.cursor + 1} selected: ${activeLetter}`);
+    if (announceChanges) {
+      const initials = this.letters.map((n) => String.fromCharCode(65 + n)).join('');
+      const activeLetter = String.fromCharCode(65 + (this.letters[this.cursor] ?? 0));
+      announce(`Initials: ${initials}. Slot ${this.cursor + 1} selected: ${activeLetter}`);
+    }
   }
 
   private onKey(ev: KeyboardEvent): void {
@@ -178,11 +180,11 @@ export class ScoreboardScene extends Phaser.Scene {
         break;
       case 'ArrowLeft':
         this.cursor = (this.cursor + LEADERBOARD.initialsLength - 1) % LEADERBOARD.initialsLength;
-        this.renderSlots();
+        this.renderSlots(true);
         break;
       case 'ArrowRight':
         this.cursor = (this.cursor + 1) % LEADERBOARD.initialsLength;
-        this.renderSlots();
+        this.renderSlots(true);
         break;
       case 'Enter':
       case ' ':
