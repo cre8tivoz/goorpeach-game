@@ -101,10 +101,10 @@ export class PlayerCar {
     sprite.angle = Phaser.Math.Linear(sprite.angle, target, PLAYER.turnLerp);
   }
 
-  update(delta: number, now: number, intent: SteerIntent): void {
+  update(delta: number, now: number, intent: SteerIntent, layout = getLayout()): void {
     const dt = delta / 1000;
     const sprite = this.sprite;
-    const { road, player, width } = getLayout();
+    const { road, player, width } = layout;
 
     const speedMult = now < this.boostEndTime ? PLAYER.boostMultiplier : 1.0;
     const effectiveSteer = this.steerSpeed * speedMult;
