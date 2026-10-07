@@ -104,16 +104,27 @@ export class ScoreboardScene extends Phaser.Scene {
         .text(x, blockTop, '▲', { fontFamily: 'JetBrains Mono', fontSize: '12px', color: COLOUR_HEX.cyan })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true });
+      up.on('pointerover', () => up.setColor(COLOUR_HEX.hazard));
+      up.on('pointerout', () => up.setColor(COLOUR_HEX.cyan));
       up.on('pointerup', () => this.changeLetter(i, +1));
 
       const slot = this.add
         .text(x, blockTop + 26, 'A', { fontFamily: 'Bungee', fontSize: width < 320 ? '22px' : '26px', color: COLOUR_HEX.text })
-        .setOrigin(0.5);
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+      slot.on('pointerover', () => slot.setColor(COLOUR_HEX.cyan));
+      slot.on('pointerout', () => this.renderSlots());
+      slot.on('pointerup', () => {
+        this.cursor = i;
+        this.renderSlots(true);
+      });
 
       const down = this.add
         .text(x, blockTop + 52, '▼', { fontFamily: 'JetBrains Mono', fontSize: '12px', color: COLOUR_HEX.cyan })
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true });
+      down.on('pointerover', () => down.setColor(COLOUR_HEX.hazard));
+      down.on('pointerout', () => down.setColor(COLOUR_HEX.cyan));
       down.on('pointerup', () => this.changeLetter(i, -1));
 
       this.slotTexts.push(slot);
@@ -124,6 +135,8 @@ export class ScoreboardScene extends Phaser.Scene {
       .text(centerX, blockTop + 88, 'CONFIRM', { fontFamily: 'Bungee', fontSize: '13px', color: COLOUR_HEX.caution })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
+    confirm.on('pointerover', () => confirm.setColor(COLOUR_HEX.cyan));
+    confirm.on('pointerout', () => confirm.setColor(COLOUR_HEX.caution));
     confirm.on('pointerup', () => void this.submit());
     layer.add(confirm);
 
@@ -135,14 +148,19 @@ export class ScoreboardScene extends Phaser.Scene {
   private changeLetter(index: number, delta: number): void {
     this.cursor = index;
     this.letters[index] = ((this.letters[index] ?? 0) + delta + 26) % 26;
-    this.renderSlots();
+    this.renderSlots(true);
   }
 
-  private renderSlots(): void {
+  private renderSlots(announceChanges = false): void {
     this.slotTexts.forEach((t, i) => {
       t.setText(String.fromCharCode(65 + (this.letters[i] ?? 0)));
       t.setColor(i === this.cursor ? COLOUR_HEX.caution : COLOUR_HEX.text);
     });
+    if (announceChanges) {
+      const initials = this.letters.map((n) => String.fromCharCode(65 + n)).join('');
+      const activeLetter = String.fromCharCode(65 + (this.letters[this.cursor] ?? 0));
+      announce(`Initials: ${initials}. Slot ${this.cursor + 1} selected: ${activeLetter}`);
+    }
   }
 
   private onKey(ev: KeyboardEvent): void {
@@ -162,11 +180,11 @@ export class ScoreboardScene extends Phaser.Scene {
         break;
       case 'ArrowLeft':
         this.cursor = (this.cursor + LEADERBOARD.initialsLength - 1) % LEADERBOARD.initialsLength;
-        this.renderSlots();
+        this.renderSlots(true);
         break;
       case 'ArrowRight':
         this.cursor = (this.cursor + 1) % LEADERBOARD.initialsLength;
-        this.renderSlots();
+        this.renderSlots(true);
         break;
       case 'Enter':
       case ' ':
