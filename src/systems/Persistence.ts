@@ -1,5 +1,33 @@
-import { SETTINGS, STORAGE_KEYS } from '../config';
+import { LEADERBOARD, SETTINGS, STORAGE_KEYS } from '../config';
 import type { GameSettings, ScoreEntry } from '../types';
+
+const INITIALS_RE = /^[A-Z]{3}$/;
+
+/** Drop anything that does not look like a real leaderboard row. */
+function sanitiseScoreEntry(value: unknown): ScoreEntry | null {
+  if (!value || typeof value !== 'object') return null;
+  const row = value as Partial<ScoreEntry>;
+  const initials = typeof row.initials === 'string' ? row.initials.toUpperCase() : '';
+  if (!INITIALS_RE.test(initials)) return null;
+  if (typeof row.score !== 'number' || !Number.isInteger(row.score) || row.score < 0 || row.score > LEADERBOARD.maxScore) {
+    return null;
+  }
+  if (
+    typeof row.levelReached !== 'number' ||
+    !Number.isInteger(row.levelReached) ||
+    row.levelReached < LEADERBOARD.minLevel ||
+    row.levelReached > LEADERBOARD.maxLevel
+  ) {
+    return null;
+  }
+  if (typeof row.createdAt !== 'number' || !Number.isFinite(row.createdAt)) return null;
+  return {
+    initials,
+    score: row.score,
+    levelReached: row.levelReached,
+    createdAt: row.createdAt,
+  };
+}
 
 function osPrefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -35,11 +63,20 @@ export class Persistence {
 
   /** Local mirror of the global board, shown when the API is unreachable. */
   static getLocalScores(): ScoreEntry[] {
-    return Persistence.read<ScoreEntry[]>(STORAGE_KEYS.localScores, []);
+    const raw = Persistence.read<unknown>(STORAGE_KEYS.localScores, []);
+    if (!Array.isArray(raw)) return [];
+    return raw
+      .map(sanitiseScoreEntry)
+      .filter((entry): entry is ScoreEntry => entry !== null)
+      .slice(0, LEADERBOARD.topN);
   }
 
   static saveLocalScores(scores: ScoreEntry[]): void {
-    Persistence.write(STORAGE_KEYS.localScores, scores);
+    const clean = scores
+      .map(sanitiseScoreEntry)
+      .filter((entry): entry is ScoreEntry => entry !== null)
+      .slice(0, LEADERBOARD.topN);
+    Persistence.write(STORAGE_KEYS.localScores, clean);
   }
 
   /** Highest level the player has unlocked (1-based). Defaults to level 1. */
