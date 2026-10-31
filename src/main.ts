@@ -75,6 +75,19 @@ const config: Phaser.Types.Core.GameConfig = {
 const game = new Phaser.Game(config);
 bindResponsiveLayout(game);
 
+/** Give the Phaser canvas an accessible name (parent role=application already set). */
+const labelGameCanvas = (): void => {
+  const canvas = document.querySelector('#game-root canvas');
+  if (!(canvas instanceof HTMLCanvasElement)) return;
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute(
+    'aria-label',
+    'DoorPeach Apocalypse game canvas. Use on-screen controls or keyboard to play.',
+  );
+};
+labelGameCanvas();
+game.events.once(Phaser.Core.Events.READY, labelGameCanvas);
+
 if (import.meta.env.DEV) {
   (window as unknown as { __GAME__: Phaser.Game }).__GAME__ = game;
 }

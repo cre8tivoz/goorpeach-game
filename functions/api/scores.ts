@@ -22,6 +22,8 @@ const INITIALS_RE = /^[A-Z]{3}$/;
 const MAX_SCORE = 1_000_000;
 const MIN_LEVEL = 1;
 const MAX_LEVEL = 5;
+/** Reject absurdly large POSTs before parsing (score payload is tiny). */
+const MAX_BODY_BYTES = 2048;
 
 interface ScoreRow {
   initials: string;
@@ -47,7 +49,11 @@ const toEntry = (r: ScoreRow): ScoreEntry => ({
 const json = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'content-type': 'application/json; charset=utf-8' },
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
+      'x-content-type-options': 'nosniff',
+    },
   });
 
 async function topScores(db: D1Database): Promise<ScoreEntry[]> {
@@ -67,9 +73,26 @@ export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
 };
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+  const contentType = request.headers.get('content-type') ?? '';
+  if (!contentType.toLowerCase().includes('application/json')) {
+    return json({ error: 'content-type must be application/json' }, 415);
+  }
+
+  const contentLength = request.headers.get('content-length');
+  if (contentLength !== null) {
+    const len = Number(contentLength);
+    if (!Number.isFinite(len) || len < 0 || len > MAX_BODY_BYTES) {
+      return json({ error: 'payload too large' }, 413);
+    }
+  }
+
   let payload: unknown;
   try {
-    payload = await request.json();
+    const raw = await request.text();
+    if (raw.length > MAX_BODY_BYTES) {
+      return json({ error: 'payload too large' }, 413);
+    }
+    payload = JSON.parse(raw) as unknown;
   } catch {
     return json({ error: 'invalid JSON' }, 400);
   }
