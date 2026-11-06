@@ -8,7 +8,7 @@
 
 |Tool                  |Why                                                |Install                                                       |
 |----------------------|---------------------------------------------------|--------------------------------------------------------------|
-|**Node.js 20+**       |Runs Vite and Phaser locally                       |nodejs.org → download → installer                             |
+|**Node.js 22+**       |Runs Vite and Phaser locally                       |nodejs.org → download → installer                             |
 |**Git**               |Version control                                    |Already on Mac. Check: `git --version` in Terminal            |
 |**VS Code or Cursor** |Code editor (you won’t write much, but you’ll read)|vscode.dev or cursor.sh                                       |
 |**GitHub account**    |Hosts the code                                     |github.com (you have one)                                     |

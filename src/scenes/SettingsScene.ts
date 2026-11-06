@@ -238,6 +238,7 @@ export class SettingsScene extends Phaser.Scene {
 
   private goBack(): void {
     this.applyAudio();
+    announce('Returning to main menu.');
     this.scene.start(SCENES.Menu);
   }
 }
