@@ -53,6 +53,7 @@ const json = (body: unknown, status = 200): Response =>
       'content-type': 'application/json; charset=utf-8',
       'cache-control': 'no-store',
       'x-content-type-options': 'nosniff',
+      Allow: 'GET, POST, OPTIONS',
     },
   });
 
@@ -66,6 +67,16 @@ async function topScores(db: D1Database): Promise<ScoreEntry[]> {
     .all<ScoreRow>();
   return (results ?? []).map(toEntry);
 }
+
+export const onRequestOptions: PagesFunction = async () =>
+  new Response(null, {
+    status: 204,
+    headers: {
+      Allow: 'GET, POST, OPTIONS',
+      'cache-control': 'no-store',
+      'x-content-type-options': 'nosniff',
+    },
+  });
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
   const top = await topScores(env.DB);
