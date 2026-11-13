@@ -13,17 +13,26 @@ import { Persistence } from './Persistence';
  *
  * No Phaser here — this is plain TypeScript so it stays testable and reusable.
  */
+/** Give up on a slow/hung API and use the local board instead of spinning forever. */
+const REQUEST_TIMEOUT_MS = 6000;
+const timeoutSignal = (): AbortSignal | undefined =>
+  typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function'
+    ? AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+    : undefined;
+
 export class Scoreboard {
   constructor(private readonly apiPath: string = LEADERBOARD.apiPath) {}
 
   /** Top-N global scores. Falls back to the local cache on failure. */
   async getTop(): Promise<ScoreEntry[]> {
     try {
-      const res = await fetch(this.apiPath, { method: 'GET' });
+      const res = await fetch(this.apiPath, { method: 'GET', signal: timeoutSignal() });
       if (!res.ok) throw new Error(`GET ${this.apiPath} → ${res.status}`);
-      const data = (await res.json()) as { top: ScoreEntry[] };
-      Persistence.saveLocalScores(data.top); // keep the offline mirror warm
-      return data.top;
+      const data = (await res.json()) as { top?: unknown };
+      if (!Array.isArray(data?.top)) throw new Error(`GET ${this.apiPath} → bad shape`);
+      const top = Persistence.sanitiseScores(data.top);
+      Persistence.saveLocalScores(top); // keep the offline mirror warm
+      return top;
     } catch {
       return Persistence.getLocalScores();
     }
@@ -41,11 +50,16 @@ export class Scoreboard {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(normalised),
+        signal: timeoutSignal(),
       });
       if (!res.ok) throw new Error(`POST ${this.apiPath} → ${res.status}`);
-      const data = (await res.json()) as SubmitResult;
-      Persistence.saveLocalScores(data.top);
-      return data;
+      const data = (await res.json()) as Partial<SubmitResult>;
+      if (typeof data?.rank !== 'number' || !Number.isInteger(data.rank) || data.rank < 1 || !Array.isArray(data.top)) {
+        throw new Error(`POST ${this.apiPath} → bad shape`);
+      }
+      const top = Persistence.sanitiseScores(data.top);
+      Persistence.saveLocalScores(top);
+      return { rank: data.rank, top };
     } catch {
       return Scoreboard.submitLocal(normalised);
     }
