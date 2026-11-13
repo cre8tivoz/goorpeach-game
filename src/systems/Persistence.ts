@@ -1,4 +1,4 @@
-import { LEADERBOARD, SETTINGS, STORAGE_KEYS } from '../config';
+import { LEADERBOARD, SETTINGS, SETTINGS_UI, STORAGE_KEYS } from '../config';
 import type { GameSettings, ScoreEntry } from '../types';
 
 const INITIALS_RE = /^[A-Z]{3}$/;
@@ -63,25 +63,28 @@ export class Persistence {
 
   /** Local mirror of the global board, shown when the API is unreachable. */
   static getLocalScores(): ScoreEntry[] {
-    const raw = Persistence.read<unknown>(STORAGE_KEYS.localScores, []);
-    if (!Array.isArray(raw)) return [];
-    return raw
-      .map(sanitiseScoreEntry)
-      .filter((entry): entry is ScoreEntry => entry !== null)
-      .slice(0, LEADERBOARD.topN);
+    return Persistence.sanitiseScores(Persistence.read<unknown>(STORAGE_KEYS.localScores, []));
   }
 
   static saveLocalScores(scores: ScoreEntry[]): void {
-    const clean = scores
+    Persistence.write(STORAGE_KEYS.localScores, Persistence.sanitiseScores(scores));
+  }
+
+  /** Keep only well-formed rows (storage or API data may be stale or tampered). */
+  static sanitiseScores(value: unknown): ScoreEntry[] {
+    if (!Array.isArray(value)) return [];
+    return value
       .map(sanitiseScoreEntry)
       .filter((entry): entry is ScoreEntry => entry !== null)
       .slice(0, LEADERBOARD.topN);
-    Persistence.write(STORAGE_KEYS.localScores, clean);
   }
 
   /** Highest level the player has unlocked (1-based). Defaults to level 1. */
   static getHighestUnlocked(): number {
-    return Persistence.read<number>(STORAGE_KEYS.highestUnlockedLevel, 1);
+    const stored = Persistence.read<unknown>(STORAGE_KEYS.highestUnlockedLevel, 1);
+    // Ignore edited/corrupt values so storage can't unlock levels that don't exist.
+    if (typeof stored !== 'number' || !Number.isInteger(stored)) return 1;
+    return Math.min(Math.max(stored, LEADERBOARD.minLevel), LEADERBOARD.maxLevel);
   }
 
   /** Record a newly reached level if it beats the stored high-water mark. */
@@ -100,8 +103,27 @@ export class Persistence {
       touchSteerSensitivity: SETTINGS.touchSteerSensitivity,
       touchInputMode: SETTINGS.touchInputMode,
     };
-    const stored = Persistence.read<Partial<GameSettings>>(STORAGE_KEYS.settings, {});
-    return { ...fallback, ...stored };
+    const raw = Persistence.read<unknown>(STORAGE_KEYS.settings, {});
+    const stored = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    // Field-by-field so a corrupt or edited value falls back instead of crashing a scene.
+    const num = (v: unknown, min: number, max: number, d: number): number =>
+      typeof v === 'number' && Number.isFinite(v) ? Math.min(Math.max(v, min), max) : d;
+    return {
+      soundVolume: num(stored.soundVolume, SETTINGS_UI.volumeMin, SETTINGS_UI.volumeMax, fallback.soundVolume),
+      musicVolume: num(stored.musicVolume, SETTINGS_UI.volumeMin, SETTINGS_UI.volumeMax, fallback.musicVolume),
+      crtScanlines: typeof stored.crtScanlines === 'boolean' ? stored.crtScanlines : fallback.crtScanlines,
+      reducedMotion: typeof stored.reducedMotion === 'boolean' ? stored.reducedMotion : fallback.reducedMotion,
+      touchSteerSensitivity: num(
+        stored.touchSteerSensitivity,
+        SETTINGS_UI.sensitivityMin,
+        SETTINGS_UI.sensitivityMax,
+        fallback.touchSteerSensitivity,
+      ),
+      touchInputMode:
+        stored.touchInputMode === 'joystick' || stored.touchInputMode === 'swipe'
+          ? stored.touchInputMode
+          : fallback.touchInputMode,
+    };
   }
 
   static setSettings(patch: Partial<GameSettings>): GameSettings {
