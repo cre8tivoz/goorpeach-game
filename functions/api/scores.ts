@@ -79,10 +79,16 @@ function isSameOriginPost(request: Request): boolean {
 async function readBodyWithLimit(
   request: Request,
   maxBytes: number,
-): Promise<{ ok: true; text: string } | { ok: false; status: 400 | 413 }> {
+): Promise<{ ok: true; text: string } | { ok: false; status: 400 | 413; error: string }> {
   if (!request.body) return { ok: true, text: '' };
 
-  const reader = request.body.getReader();
+  let reader: ReadableStreamDefaultReader<Uint8Array>;
+  try {
+    reader = request.body.getReader();
+  } catch {
+    return { ok: false, status: 400, error: 'unable to read request body' };
+  }
+
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
 
@@ -93,11 +99,13 @@ async function readBodyWithLimit(
       if (!value) continue;
       totalBytes += value.byteLength;
       if (totalBytes > maxBytes) {
-        await reader.cancel();
-        return { ok: false, status: 413 };
+        await reader.cancel().catch(() => undefined);
+        return { ok: false, status: 413, error: 'payload too large' };
       }
       chunks.push(value);
     }
+  } catch {
+    return { ok: false, status: 400, error: 'unable to read request body' };
   } finally {
     reader.releaseLock();
   }
@@ -112,7 +120,7 @@ async function readBodyWithLimit(
   try {
     return { ok: true, text: new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(combined) };
   } catch {
-    return { ok: false, status: 400 };
+    return { ok: false, status: 400, error: 'invalid UTF-8 payload' };
   }
 }
 
@@ -167,10 +175,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   const bodyRead = await readBodyWithLimit(request, MAX_BODY_BYTES);
   if (!bodyRead.ok) {
-    return json(
-      { error: bodyRead.status === 413 ? 'payload too large' : 'invalid UTF-8 payload' },
-      bodyRead.status,
-    );
+    return json({ error: bodyRead.error }, bodyRead.status);
   }
 
   let payload: unknown;
