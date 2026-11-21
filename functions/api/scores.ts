@@ -57,6 +57,73 @@ const json = (body: unknown, status = 200): Response =>
     },
   });
 
+/** Reject cross-site POSTs — /api/scores is same-origin with the static site. */
+function isSameOriginPost(request: Request): boolean {
+  const secFetchSite = request.headers.get('sec-fetch-site')?.trim().toLowerCase();
+  if (secFetchSite === 'cross-site') return false;
+
+  const origin = request.headers.get('origin');
+  if (origin === null) return true;
+
+  try {
+    return origin === new URL(request.url).origin;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Stream the request body with a hard UTF-8 byte cap so chunked requests
+ * without an honest Content-Length cannot exhaust Worker memory.
+ */
+async function readBodyWithLimit(
+  request: Request,
+  maxBytes: number,
+): Promise<{ ok: true; text: string } | { ok: false; status: 400 | 413; error: string }> {
+  if (!request.body) return { ok: true, text: '' };
+
+  let reader: ReadableStreamDefaultReader<Uint8Array>;
+  try {
+    reader = request.body.getReader();
+  } catch {
+    return { ok: false, status: 400, error: 'unable to read request body' };
+  }
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        return { ok: false, status: 413, error: 'payload too large' };
+      }
+      chunks.push(value);
+    }
+  } catch {
+    return { ok: false, status: 400, error: 'unable to read request body' };
+  } finally {
+    reader.releaseLock();
+  }
+
+  const combined = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  try {
+    return { ok: true, text: new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(combined) };
+  } catch {
+    return { ok: false, status: 400, error: 'invalid UTF-8 payload' };
+  }
+}
+
 async function topScores(db: D1Database): Promise<ScoreEntry[]> {
   const { results } = await db
     .prepare(
@@ -79,13 +146,22 @@ export const onRequestOptions: PagesFunction = async () =>
   });
 
 export const onRequestGet: PagesFunction<Env> = async ({ env }) => {
-  const top = await topScores(env.DB);
-  return json({ top });
+  if (!env.DB) return json({ error: 'scoreboard unavailable' }, 503);
+  try {
+    const top = await topScores(env.DB);
+    return json({ top });
+  } catch {
+    return json({ error: 'scoreboard unavailable' }, 503);
+  }
 };
 
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  const contentType = request.headers.get('content-type') ?? '';
-  if (!contentType.toLowerCase().includes('application/json')) {
+  if (!isSameOriginPost(request)) {
+    return json({ error: 'cross-origin submission forbidden' }, 403);
+  }
+
+  const mediaType = (request.headers.get('content-type') ?? '').split(';', 1)[0]?.trim().toLowerCase() ?? '';
+  if (mediaType !== 'application/json') {
     return json({ error: 'content-type must be application/json' }, 415);
   }
 
@@ -97,15 +173,20 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     }
   }
 
+  const bodyRead = await readBodyWithLimit(request, MAX_BODY_BYTES);
+  if (!bodyRead.ok) {
+    return json({ error: bodyRead.error }, bodyRead.status);
+  }
+
   let payload: unknown;
   try {
-    const raw = await request.text();
-    if (raw.length > MAX_BODY_BYTES) {
-      return json({ error: 'payload too large' }, 413);
-    }
-    payload = JSON.parse(raw) as unknown;
+    payload = JSON.parse(bodyRead.text) as unknown;
   } catch {
     return json({ error: 'invalid JSON' }, 400);
+  }
+
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return json({ error: 'body must be a JSON object' }, 400);
   }
 
   const body = payload as Partial<Record<'initials' | 'score' | 'levelReached', unknown>>;
@@ -128,19 +209,25 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return json({ error: 'levelReached out of range' }, 400);
   }
 
-  const createdAt = Date.now();
-  await env.DB.prepare(
-    'INSERT INTO scores (initials, score, level_reached, created_at) VALUES (?1, ?2, ?3, ?4)',
-  )
-    .bind(initials, score, levelReached, createdAt)
-    .run();
+  if (!env.DB) return json({ error: 'scoreboard unavailable' }, 503);
 
-  // Rank = how many strictly-higher scores exist, plus one.
-  const higher = await env.DB.prepare('SELECT COUNT(*) AS n FROM scores WHERE score > ?1')
-    .bind(score)
-    .first<{ n: number }>();
-  const rank = (higher?.n ?? 0) + 1;
+  try {
+    const createdAt = Date.now();
+    await env.DB.prepare(
+      'INSERT INTO scores (initials, score, level_reached, created_at) VALUES (?1, ?2, ?3, ?4)',
+    )
+      .bind(initials, score, levelReached, createdAt)
+      .run();
 
-  const top = await topScores(env.DB);
-  return json({ rank, top }, 201);
+    // Rank = how many strictly-higher scores exist, plus one.
+    const higher = await env.DB.prepare('SELECT COUNT(*) AS n FROM scores WHERE score > ?1')
+      .bind(score)
+      .first<{ n: number }>();
+    const rank = (higher?.n ?? 0) + 1;
+
+    const top = await topScores(env.DB);
+    return json({ rank, top }, 201);
+  } catch {
+    return json({ error: 'scoreboard unavailable' }, 503);
+  }
 };

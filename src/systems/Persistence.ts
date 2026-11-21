@@ -89,12 +89,14 @@ export class Persistence {
 
   /** Record a newly reached level if it beats the stored high-water mark. */
   static unlockLevel(level: number): void {
-    if (level > Persistence.getHighestUnlocked()) {
-      Persistence.write(STORAGE_KEYS.highestUnlockedLevel, level);
+    if (!Number.isInteger(level)) return;
+    const clamped = Math.min(Math.max(level, LEADERBOARD.minLevel), LEADERBOARD.maxLevel);
+    if (clamped > Persistence.getHighestUnlocked()) {
+      Persistence.write(STORAGE_KEYS.highestUnlockedLevel, clamped);
     }
   }
 
-  static getSettings(): GameSettings {
+  private static sanitiseSettings(raw: unknown): GameSettings {
     const fallback: GameSettings = {
       soundVolume: SETTINGS.soundVolume,
       musicVolume: SETTINGS.musicVolume,
@@ -103,7 +105,6 @@ export class Persistence {
       touchSteerSensitivity: SETTINGS.touchSteerSensitivity,
       touchInputMode: SETTINGS.touchInputMode,
     };
-    const raw = Persistence.read<unknown>(STORAGE_KEYS.settings, {});
     const stored = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
     // Field-by-field so a corrupt or edited value falls back instead of crashing a scene.
     const num = (v: unknown, min: number, max: number, d: number): number =>
@@ -126,8 +127,12 @@ export class Persistence {
     };
   }
 
+  static getSettings(): GameSettings {
+    return Persistence.sanitiseSettings(Persistence.read<unknown>(STORAGE_KEYS.settings, {}));
+  }
+
   static setSettings(patch: Partial<GameSettings>): GameSettings {
-    const next = { ...Persistence.getSettings(), ...patch };
+    const next = Persistence.sanitiseSettings({ ...Persistence.getSettings(), ...patch });
     Persistence.write(STORAGE_KEYS.settings, next);
     return next;
   }

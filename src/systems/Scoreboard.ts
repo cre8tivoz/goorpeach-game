@@ -76,9 +76,9 @@ export class Scoreboard {
   private static submitLocal(entry: NewScore): SubmitResult {
     const board = Persistence.getLocalScores();
     const row: ScoreEntry = { ...entry, createdAt: Date.now() };
-    const next = [...board, row]
-      .sort((a, b) => b.score - a.score || a.createdAt - b.createdAt)
-      .slice(0, LEADERBOARD.topN);
+    const next = Persistence.sanitiseScores(
+      [...board, row].sort((a, b) => b.score - a.score || a.createdAt - b.createdAt),
+    );
     Persistence.saveLocalScores(next);
     const rank = board.filter((e) => e.score > entry.score).length + 1;
     return { rank, top: next };
